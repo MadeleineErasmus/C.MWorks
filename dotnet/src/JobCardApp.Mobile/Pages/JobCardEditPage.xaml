@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.JobCardEditPage"
+             x:DataType="vm:JobCardEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Job card">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Customer" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Customers}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCustomer}" />
+
+                    <Label Text="Title" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Title}" Placeholder="e.g. Compressor service" />
+
+                    <Label Text="Description" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Description}" HeightRequest="80" />
+
+                    <Label Text="Site address" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding SiteAddress}" />
+
+                    <Label Text="Technician" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Technician}" />
+
+                    <Label Text="Status" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Line items" FontAttributes="Bold" />
+
+                    <CollectionView ItemsSource="{Binding Lines}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:JobCardLine">
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,6">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Description}" />
+                                        <Label Style="{StaticResource Caption}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Kind}" />
+                                                    <Span Text=" · " />
+                                                    <Span Text="{Binding Quantity}" />
+                                                    <Span Text=" × " />
+                                                    <Span Text="{Binding UnitPrice, StringFormat='{0:C}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="1"
+                                           Text="{Binding LineTotal, StringFormat='{0:C}'}"
+                                           VerticalOptions="Center" />
+
+                                    <Button Grid.Column="2"
+                                            Text="✕"
+                                            WidthRequest="40"
+                                            HeightRequest="34"
+                                            BackgroundColor="Transparent"
+                                            TextColor="{StaticResource Muted}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=RemoveLineCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="#E2E8E7" />
+
+                    <Picker ItemsSource="{Binding LineKinds}" SelectedItem="{Binding NewLineKind}" />
+                    <Entry Text="{Binding NewLineDescription}" Placeholder="Description" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Entry Grid.Column="0" Text="{Binding NewLineQuantity}" Keyboard="Numeric" Placeholder="Qty" />
+                        <Entry Grid.Column="1" Text="{Binding NewLineUnitPrice}" Keyboard="Numeric" Placeholder="Unit price" />
+                    </Grid>
+                    <Button Text="Add line" Command="{Binding AddLineCommand}" />
+
+                    <Label Text="{Binding Subtotal, StringFormat='Subtotal: {0:C}'}"
+                           FontAttributes="Bold"
+                           HorizontalOptions="End" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Save job card" Command="{Binding SaveCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

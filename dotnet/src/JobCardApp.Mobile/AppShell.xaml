@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:JobCardApp.Mobile.Pages"
+       x:Class="JobCardApp.Mobile.AppShell"
+       Shell.FlyoutBehavior="Disabled"
+       Shell.BackgroundColor="{StaticResource Brand}"
+       Shell.TitleColor="White"
+       Shell.TabBarTitleColor="{StaticResource Brand}">
+
+    <TabBar>
+        <ShellContent Title="Job cards"
+                      Route="jobcards"
+                      ContentTemplate="{DataTemplate pages:JobCardListPage}" />
+        <ShellContent Title="Invoices"
+                      Route="invoices"
+                      ContentTemplate="{DataTemplate pages:InvoiceListPage}" />
+    </TabBar>
+</Shell>
