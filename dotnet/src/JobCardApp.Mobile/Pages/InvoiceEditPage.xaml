@@ -67,7 +67,10 @@
                                 <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,6">
                                     <VerticalStackLayout Grid.Column="0">
                                         <Label Text="{Binding Description}" />
-                                        <Label Style="{StaticResource Caption}">
+
+                                        <!-- Locked (Sent/etc.): read-only -->
+                                        <Label Style="{StaticResource Caption}"
+                                               IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceEditViewModel}}, Path=CanEditLines, Converter={x:Static vm:InverseBoolConverter.Instance}}">
                                             <Label.FormattedText>
                                                 <FormattedString>
                                                     <Span Text="{Binding Quantity}" />
@@ -76,6 +79,22 @@
                                                 </FormattedString>
                                             </Label.FormattedText>
                                         </Label>
+
+                                        <!-- Draft: editable, so a wrong job-card price can be corrected here -->
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="4"
+                                              IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceEditViewModel}}, Path=CanEditLines}">
+                                            <Entry Grid.Column="0" Text="{Binding Quantity}" Keyboard="Numeric"
+                                                   WidthRequest="50" FontSize="13" Unfocused="OnLineFieldUnfocused" />
+                                            <Label Grid.Column="1" Text="×" VerticalOptions="Center" Style="{StaticResource Caption}" />
+                                            <Entry Grid.Column="2" Text="{Binding UnitPrice}" Keyboard="Numeric"
+                                                   WidthRequest="80" FontSize="13" Unfocused="OnLineFieldUnfocused" />
+                                        </Grid>
+
+                                        <Label Text="{Binding LastInvoicedSummary}"
+                                               Style="{StaticResource Caption}"
+                                               FontSize="11"
+                                               TextColor="{StaticResource Muted}"
+                                               IsVisible="{Binding LastInvoicedSummary, Converter={x:Static vm:NotNullConverter.Instance}}" />
                                     </VerticalStackLayout>
 
                                     <Label Grid.Column="1"

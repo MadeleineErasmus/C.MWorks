@@ -18,6 +18,7 @@ namespace JobCardApp.Mobile.ViewModels;
 public partial class InvoiceEditViewModel : ObservableObject
 {
     private readonly ApiClient _api;
+    private int _customerId;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanEditLines))]
@@ -96,9 +97,17 @@ public partial class InvoiceEditViewModel : ObservableObject
             OutstandingAmount = invoice.OutstandingAmount;
             SentAt = invoice.SentAt;
             SentTo = invoice.SentTo;
+            _customerId = invoice.CustomerId;
 
             Lines.Clear();
-            foreach (var line in invoice.Lines) Lines.Add(line);
+            foreach (var line in invoice.Lines)
+            {
+                // Attached before adding — InvoiceLine isn't an observable
+                // model, so this has to be in place by the time the
+                // CollectionView first renders the row, not after.
+                await AttachLastInvoicedSummaryAsync(line);
+                Lines.Add(line);
+            }
         }
         catch (Exception ex)
         {
@@ -111,23 +120,63 @@ public partial class InvoiceEditViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddLine()
+    private async Task AddLineAsync()
     {
         if (!CanEditLines || string.IsNullOrWhiteSpace(NewLineDescription)) return;
 
         decimal.TryParse(NewLineQuantity, out var qty);
         decimal.TryParse(NewLineUnitPrice, out var price);
 
-        Lines.Add(new InvoiceLine
+        var line = new InvoiceLine
         {
             Description = NewLineDescription.Trim(),
             Quantity = qty <= 0 ? 1 : qty,
             UnitPrice = price
-        });
+        };
+        await AttachLastInvoicedSummaryAsync(line);
+        Lines.Add(line);
 
         NewLineDescription = string.Empty;
         NewLineQuantity = "1";
         NewLineUnitPrice = "0";
+    }
+
+    /// <summary>
+    /// Best-effort — this is a helpful hint, not critical path, so a failed
+    /// lookup shouldn't block loading or adding a line.
+    /// </summary>
+    private async Task AttachLastInvoicedSummaryAsync(InvoiceLine line)
+    {
+        if (_customerId <= 0 || string.IsNullOrWhiteSpace(line.Description)) return;
+
+        try
+        {
+            var history = await _api.GetPricingHistoryAsync(_customerId, line.Description);
+            var match = history?.FirstOrDefault(h => h.InvoiceNumber != Number);
+            if (match is not null)
+            {
+                line.LastInvoicedSummary =
+                    $"Last invoiced: {match.Quantity:0.##} × {match.UnitPrice:C} ({match.InvoiceNumber}, {match.InvoiceDate:d})";
+            }
+        }
+        catch
+        {
+            // Ignore — pricing history is a convenience, not required to edit an invoice.
+        }
+    }
+
+    /// <summary>
+    /// InvoiceLine isn't an observable model, so an in-place edit to an
+    /// existing line's Quantity/UnitPrice doesn't refresh its LineTotal or
+    /// the Subtotal/Tax/Total footer on its own — re-adding every line forces
+    /// the CollectionView to re-render each row, and Lines.CollectionChanged
+    /// already refreshes the footer totals.
+    /// </summary>
+    public void RecalculateTotals()
+    {
+        var lines = Lines.ToList();
+        Lines.Clear();
+        foreach (var l in lines) Lines.Add(l);
     }
 
     [RelayCommand]

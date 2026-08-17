@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace JobCardApp.Shared.Models;
 
 public enum InvoiceStatus
@@ -78,4 +80,8 @@ public class InvoiceLine
     public decimal UnitPrice { get; set; }
 
     public decimal LineTotal => Math.Round(Quantity * UnitPrice, 2);
+
+    /// <summary>Client-side display only, set after load from pricing history — never read from or sent to the API.</summary>
+    [JsonIgnore]
+    public string? LastInvoicedSummary { get; set; }
 }
