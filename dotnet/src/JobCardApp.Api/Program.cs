@@ -1,11 +1,16 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using JobCardApp.Api.Data;
+using JobCardApp.Api.Services;
 using JobCardApp.Shared.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
+// Required by QuestPDF at startup — Community license is free for small
+// businesses/individuals, which fits this app (§ decision).
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +41,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+
+builder.Services.AddScoped<PdfService>();
+builder.Services.AddScoped<EmailService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");

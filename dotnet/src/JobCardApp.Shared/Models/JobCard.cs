@@ -58,5 +58,9 @@ public class JobCardLine
     public decimal Quantity { get; set; } = 1m;
     public decimal UnitPrice { get; set; }
 
+    /// <summary>Optional link to the specific piece of customer equipment this line documents work on — available on any line, not just Part lines.</summary>
+    public int? CustomerItemId { get; set; }
+    public CustomerItem? CustomerItem { get; set; }
+
     public decimal LineTotal => Math.Round(Quantity * UnitPrice, 2);
 }

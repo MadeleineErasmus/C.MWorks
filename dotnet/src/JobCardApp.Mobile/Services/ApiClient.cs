@@ -117,6 +117,24 @@ public class ApiClient
         return _http.GetFromJsonAsync<CustomerStatement>(url, JsonOptions);
     }
 
+    // Customer items
+    public Task<List<CustomerItem>?> GetCustomerItemsAsync(int customerId)
+        => _http.GetFromJsonAsync<List<CustomerItem>>($"api/customers/{customerId}/items", JsonOptions);
+
+    public async Task<CustomerItem?> CreateCustomerItemAsync(int customerId, string name)
+    {
+        var response = await _http.PostAsJsonAsync($"api/customers/{customerId}/items", new CustomerItem { Name = name });
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<CustomerItem>(JsonOptions);
+    }
+
+    public Task<List<CustomerItemHistoryEntry>?> GetCustomerItemHistoryAsync(int itemId)
+        => _http.GetFromJsonAsync<List<CustomerItemHistoryEntry>>($"api/customer-items/{itemId}/history", JsonOptions);
+
+    public Task<CustomerItem?> GetCustomerItemAsync(int itemId)
+        => _http.GetFromJsonAsync<CustomerItem>($"api/customer-items/{itemId}", JsonOptions);
+
     // Job cards
     public Task<List<JobCard>?> GetJobCardsAsync()
         => _http.GetFromJsonAsync<List<JobCard>>("api/jobcards", JsonOptions);
@@ -159,6 +177,9 @@ public class ApiClient
     public Task<List<Invoice>?> GetInvoicesAsync()
         => _http.GetFromJsonAsync<List<Invoice>>("api/invoices", JsonOptions);
 
+    public Task<Invoice?> GetInvoiceAsync(int id)
+        => _http.GetFromJsonAsync<Invoice>($"api/invoices/{id}", JsonOptions);
+
     public async Task<Invoice?> CreateInvoiceFromJobCardAsync(int jobCardId)
     {
         var response = await _http.PostAsync($"api/invoices/from-jobcard/{jobCardId}", null);
@@ -168,19 +189,56 @@ public class ApiClient
         return await response.Content.ReadFromJsonAsync<Invoice>(JsonOptions);
     }
 
+    public async Task<Invoice?> UpdateInvoiceLinesAsync(Invoice invoice)
+    {
+        var response = await _http.PutAsJsonAsync($"api/invoices/{invoice.Id}", invoice);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Invoice>(JsonOptions);
+    }
+
     public async Task SetInvoiceStatusAsync(int invoiceId, InvoiceStatus status)
     {
         var response = await _http.PostAsync($"api/invoices/{invoiceId}/status/{status}", null);
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>Real send: renders a PDF and emails it to the customer on file, Draft-only.</summary>
+    public async Task<Invoice?> SendInvoiceAsync(int invoiceId)
+    {
+        var response = await _http.PostAsync($"api/invoices/{invoiceId}/send", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Invoice>(JsonOptions);
+    }
+
+    /// <summary>Reverts a Sent/Overdue invoice back to Draft so its lines become editable again.</summary>
+    public async Task<Invoice?> ReviseInvoiceAsync(int invoiceId)
+    {
+        var response = await _http.PostAsync($"api/invoices/{invoiceId}/revise", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Invoice>(JsonOptions);
+    }
+
     // Quotes
     public Task<List<Quote>?> GetQuotesAsync()
         => _http.GetFromJsonAsync<List<Quote>>("api/quotes", JsonOptions);
 
+    public Task<Quote?> GetQuoteAsync(int id)
+        => _http.GetFromJsonAsync<Quote>($"api/quotes/{id}", JsonOptions);
+
     public async Task<Quote?> CreateQuoteFromJobCardAsync(int jobCardId)
     {
         var response = await _http.PostAsync($"api/quotes/from-jobcard/{jobCardId}", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Quote>(JsonOptions);
+    }
+
+    public async Task<Quote?> UpdateQuoteLinesAsync(Quote quote)
+    {
+        var response = await _http.PutAsJsonAsync($"api/quotes/{quote.Id}", quote);
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
         return await response.Content.ReadFromJsonAsync<Quote>(JsonOptions);
@@ -191,6 +249,24 @@ public class ApiClient
         var response = await _http.PostAsync($"api/quotes/{quoteId}/status/{status}", null);
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>Real send: renders a PDF and emails it to the customer on file, Draft-only.</summary>
+    public async Task<Quote?> SendQuoteAsync(int quoteId)
+    {
+        var response = await _http.PostAsync($"api/quotes/{quoteId}/send", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Quote>(JsonOptions);
+    }
+
+    /// <summary>Reverts a Sent quote back to Draft so its lines become editable again.</summary>
+    public async Task<Quote?> ReviseQuoteAsync(int quoteId)
+    {
+        var response = await _http.PostAsync($"api/quotes/{quoteId}/revise", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Quote>(JsonOptions);
     }
 
     public async Task<Invoice?> ConvertQuoteToInvoiceAsync(int quoteId)

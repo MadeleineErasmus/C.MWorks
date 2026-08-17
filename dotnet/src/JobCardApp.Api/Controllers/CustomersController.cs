@@ -141,6 +141,55 @@ public class CustomersController : ControllerBase
         };
     }
 
+    /// <summary>
+    /// This customer's individually-tracked equipment items (e.g. distinct
+    /// gate motors) so a job card line or the customer page can pick one —
+    /// each item's own history is what makes it worth tracking separately.
+    /// </summary>
+    [HttpGet("{id:int}/items")]
+    public async Task<ActionResult<List<CustomerItem>>> GetItems(int id)
+    {
+        if (!await _db.Customers.AnyAsync(c => c.Id == id))
+            return NotFound();
+
+        return await _db.CustomerItems
+            .Where(i => i.CustomerId == id)
+            .OrderBy(i => i.Name)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Find-or-create: called both from the customer page's "add item" entry
+    /// and inline while adding a job card line, so a name typed twice for the
+    /// same customer must resolve to the same item rather than duplicating it.
+    /// </summary>
+    [HttpPost("{id:int}/items")]
+    public async Task<ActionResult<CustomerItem>> CreateItem(int id, CustomerItem item)
+    {
+        if (!await _db.Customers.AnyAsync(c => c.Id == id))
+            return NotFound();
+
+        if (string.IsNullOrWhiteSpace(item.Name))
+            return BadRequest("Name is required.");
+
+        var name = item.Name.Trim();
+
+        var existing = await _db.CustomerItems
+            .FirstOrDefaultAsync(i => i.CustomerId == id && i.Name.ToLower() == name.ToLower());
+        if (existing is not null)
+            return existing;
+
+        var created = new CustomerItem
+        {
+            CustomerId = id,
+            Name = name,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.CustomerItems.Add(created);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetItems), new { id }, created);
+    }
+
     [HttpPost]
     public async Task<ActionResult<Customer>> Create(Customer customer)
     {

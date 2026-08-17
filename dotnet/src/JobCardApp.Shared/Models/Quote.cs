@@ -37,6 +37,12 @@ public class Quote
 
     public string? Notes { get; set; }
 
+    /// <summary>Set when POST /api/quotes/{id}/send succeeds — real email send, not a bare status flip.</summary>
+    public DateTime? SentAt { get; set; }
+
+    /// <summary>The customer email address the quote was actually emailed to.</summary>
+    public string? SentTo { get; set; }
+
     public List<QuoteLine> Lines { get; set; } = new();
 
     public decimal Subtotal => Math.Round(Lines.Sum(l => l.LineTotal), 2);
@@ -47,6 +53,9 @@ public class Quote
     public bool CanAcceptOrReject => Status == QuoteStatus.Sent;
     public bool CanConvertToInvoice => Status is QuoteStatus.Draft or QuoteStatus.Sent or QuoteStatus.Accepted;
     public bool CanDelete => Status == QuoteStatus.Draft;
+
+    /// <summary>Only a Sent quote can be reverted to Draft for editing — final states (Accepted/Rejected/ConvertedToInvoice/Expired/Cancelled) are not revisable.</summary>
+    public bool CanRevise => Status == QuoteStatus.Sent;
 }
 
 public class QuoteLine

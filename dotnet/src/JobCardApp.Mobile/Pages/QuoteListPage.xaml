@@ -29,6 +29,12 @@
                     <DataTemplate x:DataType="models:Quote">
                         <Border Style="{StaticResource CardFrame}" Margin="0,0,0,10">
                             <VerticalStackLayout Spacing="6">
+                                <VerticalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=OpenQuoteCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </VerticalStackLayout.GestureRecognizers>
+
                                 <Grid ColumnDefinitions="*,Auto">
                                     <Label Grid.Column="0" Text="{Binding Number}" FontAttributes="Bold" />
                                     <Label Grid.Column="1" Text="{Binding Status}" Style="{StaticResource Caption}" />
@@ -49,11 +55,6 @@
                                 <Label Text="{Binding Total, StringFormat='Total {0:C}'}" FontAttributes="Bold" />
 
                                 <FlexLayout Wrap="Wrap" JustifyContent="Start">
-                                    <Button Text="Send"
-                                            FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
-                                            IsVisible="{Binding CanSend}"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=SendCommand}"
-                                            CommandParameter="{Binding .}" />
                                     <Button Text="Accepted"
                                             FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
                                             IsVisible="{Binding CanAcceptOrReject}"

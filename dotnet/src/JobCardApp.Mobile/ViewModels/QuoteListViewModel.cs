@@ -41,7 +41,7 @@ public partial class QuoteListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SendAsync(Quote quote) => await ChangeStatusAsync(quote, QuoteStatus.Sent);
+    private Task OpenQuoteAsync(Quote quote) => Shell.Current.GoToAsync($"quote-edit?id={quote.Id}");
 
     [RelayCommand]
     private async Task AcceptAsync(Quote quote) => await ChangeStatusAsync(quote, QuoteStatus.Accepted);

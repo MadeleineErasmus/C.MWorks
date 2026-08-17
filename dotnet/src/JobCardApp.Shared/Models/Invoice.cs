@@ -40,6 +40,12 @@ public class Invoice
 
     public string? Notes { get; set; }
 
+    /// <summary>Set when POST /api/invoices/{id}/send succeeds — real email send, not a bare status flip.</summary>
+    public DateTime? SentAt { get; set; }
+
+    /// <summary>The customer email address the invoice was actually emailed to.</summary>
+    public string? SentTo { get; set; }
+
     public List<InvoiceLine> Lines { get; set; } = new();
 
     /// <summary>Populated via <see cref="PaymentAllocation"/> — see §13/§14.</summary>
@@ -51,6 +57,15 @@ public class Invoice
 
     public decimal AllocatedAmount => Math.Round(Allocations.Sum(a => a.AllocatedAmount), 2);
     public decimal OutstandingAmount => Total - AllocatedAmount;
+
+    public bool CanSend => Status == InvoiceStatus.Draft;
+
+    /// <summary>
+    /// Sent and Overdue are both "sent but unpaid" (Overdue is a manually/periodically
+    /// set status per InvoicesController.SetStatus, not server-computed) so both can be
+    /// reverted to Draft for editing. Paid/PartiallyPaid/Cancelled are final and are not revisable.
+    /// </summary>
+    public bool CanRevise => Status is InvoiceStatus.Sent or InvoiceStatus.Overdue;
 }
 
 public class InvoiceLine

@@ -33,6 +33,12 @@
                     <DataTemplate x:DataType="models:Invoice">
                         <Border Style="{StaticResource CardFrame}" Margin="0,0,0,10">
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceListViewModel}}, Path=OpenInvoiceCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
+
                                 <Label Grid.Row="0" Grid.Column="0"
                                        Text="{Binding Number}"
                                        FontAttributes="Bold" />
@@ -57,13 +63,10 @@
                                 <Label Grid.Row="3" Grid.Column="0"
                                        Text="{Binding Total, StringFormat='Total {0:C}'}" />
 
-                                <Button Grid.Row="3" Grid.Column="1"
-                                        Text="Mark paid"
-                                        FontSize="12"
-                                        HeightRequest="34"
-                                        Padding="10,0"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceListViewModel}}, Path=MarkPaidCommand}"
-                                        CommandParameter="{Binding .}" />
+                                <Label Grid.Row="3" Grid.Column="1"
+                                       Text="{Binding OutstandingAmount, StringFormat='Due {0:C}'}"
+                                       Style="{StaticResource Caption}"
+                                       VerticalOptions="Center" />
                             </Grid>
                         </Border>
                     </DataTemplate>

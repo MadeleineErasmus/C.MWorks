@@ -46,16 +46,5 @@ public partial class InvoiceListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task MarkPaidAsync(Invoice invoice)
-    {
-        try
-        {
-            await _api.SetInvoiceStatusAsync(invoice.Id, InvoiceStatus.Paid);
-            await LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlert("Update failed", ex.Message, "OK");
-        }
-    }
+    private Task OpenInvoiceAsync(Invoice invoice) => Shell.Current.GoToAsync($"invoice-edit?id={invoice.Id}");
 }

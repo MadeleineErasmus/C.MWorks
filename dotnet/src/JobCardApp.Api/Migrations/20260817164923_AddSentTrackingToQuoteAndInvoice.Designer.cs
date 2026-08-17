@@ -4,6 +4,7 @@ using JobCardApp.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobCardApp.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817164923_AddSentTrackingToQuoteAndInvoice")]
+    partial class AddSentTrackingToQuoteAndInvoice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,32 +119,6 @@ namespace JobCardApp.Api.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("Customers");
-                });
-
-            modelBuilder.Entity("JobCardApp.Shared.Models.CustomerItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId", "Name");
-
-                    b.ToTable("CustomerItems");
                 });
 
             modelBuilder.Entity("JobCardApp.Shared.Models.Invoice", b =>
@@ -301,9 +278,6 @@ namespace JobCardApp.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CustomerItemId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -324,8 +298,6 @@ namespace JobCardApp.Api.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CustomerItemId");
 
                     b.HasIndex("JobCardId");
 
@@ -533,17 +505,6 @@ namespace JobCardApp.Api.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("JobCardApp.Shared.Models.CustomerItem", b =>
-                {
-                    b.HasOne("JobCardApp.Shared.Models.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-                });
-
             modelBuilder.Entity("JobCardApp.Shared.Models.Invoice", b =>
                 {
                     b.HasOne("JobCardApp.Shared.Models.Company", "Company")
@@ -598,18 +559,11 @@ namespace JobCardApp.Api.Migrations
 
             modelBuilder.Entity("JobCardApp.Shared.Models.JobCardLine", b =>
                 {
-                    b.HasOne("JobCardApp.Shared.Models.CustomerItem", "CustomerItem")
-                        .WithMany()
-                        .HasForeignKey("CustomerItemId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("JobCardApp.Shared.Models.JobCard", null)
                         .WithMany("Lines")
                         .HasForeignKey("JobCardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("CustomerItem");
                 });
 
             modelBuilder.Entity("JobCardApp.Shared.Models.Payment", b =>

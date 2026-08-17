@@ -21,7 +21,7 @@ public class JobCardsController : ControllerBase
         var query = _db.JobCards
             .Include(j => j.Customer)
             .Include(j => j.Company)
-            .Include(j => j.Lines)
+            .Include(j => j.Lines).ThenInclude(l => l.CustomerItem)
             .AsQueryable();
 
         if (status.HasValue)
@@ -36,7 +36,7 @@ public class JobCardsController : ControllerBase
         var jobCard = await _db.JobCards
             .Include(j => j.Customer)
             .Include(j => j.Company)
-            .Include(j => j.Lines)
+            .Include(j => j.Lines).ThenInclude(l => l.CustomerItem)
             .FirstOrDefaultAsync(j => j.Id == id);
 
         return jobCard is null ? NotFound() : jobCard;
@@ -58,7 +58,14 @@ public class JobCardsController : ControllerBase
         if (string.IsNullOrWhiteSpace(jobCard.Reference))
             jobCard.Reference = InvoiceFactory.NextReference("JC", await NextSequenceAsync());
 
-        foreach (var line in jobCard.Lines) line.Id = 0;
+        foreach (var line in jobCard.Lines)
+        {
+            line.Id = 0;
+            // Only the FK should travel with the line — a populated nav object
+            // (set client-side so a brand-new item's name shows immediately)
+            // would otherwise make EF try to re-insert an already-existing item.
+            line.CustomerItem = null;
+        }
 
         _db.JobCards.Add(jobCard);
         await _db.SaveChangesAsync();
@@ -93,7 +100,8 @@ public class JobCardsController : ControllerBase
             Kind = l.Kind,
             Description = l.Description,
             Quantity = l.Quantity,
-            UnitPrice = l.UnitPrice
+            UnitPrice = l.UnitPrice,
+            CustomerItemId = l.CustomerItemId
         }).ToList();
 
         await _db.SaveChangesAsync();

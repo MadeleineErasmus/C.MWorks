@@ -1,4 +1,5 @@
 using JobCardApp.Api.Data;
+using JobCardApp.Api.Services;
 using JobCardApp.Shared;
 using JobCardApp.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -12,13 +13,19 @@ namespace JobCardApp.Api.Controllers;
 [Authorize]
 public class InvoicesController : ControllerBase
 {
+    private const string InvoiceActionRoles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Accounts)},{nameof(UserRole.Manager)}";
+
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
+    private readonly PdfService _pdf;
+    private readonly EmailService _email;
 
-    public InvoicesController(AppDbContext db, IConfiguration config)
+    public InvoicesController(AppDbContext db, IConfiguration config, PdfService pdf, EmailService email)
     {
         _db = db;
         _config = config;
+        _pdf = pdf;
+        _email = email;
     }
 
     [HttpGet]
@@ -99,18 +106,59 @@ public class InvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Ordinary status transitions (Sent, Overdue, Cancelled, back to Draft).
+    /// Draft-only edit of an invoice's lines/notes/due date. Once an invoice
+    /// is Sent (or Overdue) its lines are locked — POST /api/invoices/{id}/revise
+    /// must be used to bring it back to Draft before it can be edited again.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = InvoiceActionRoles)]
+    public async Task<ActionResult<Invoice>> Update(int id, Invoice update)
+    {
+        var invoice = await _db.Invoices.Include(i => i.Lines).FirstOrDefaultAsync(i => i.Id == id);
+        if (invoice is null) return NotFound();
+
+        if (invoice.Status != InvoiceStatus.Draft)
+            return Conflict("Only draft invoices can be edited — use POST /api/invoices/{id}/revise first.");
+
+        invoice.DueOn = update.DueOn;
+        invoice.Notes = update.Notes;
+
+        _db.InvoiceLines.RemoveRange(invoice.Lines);
+        invoice.Lines = update.Lines.Select(l => new InvoiceLine
+        {
+            Description = l.Description,
+            Quantity = l.Quantity,
+            UnitPrice = l.UnitPrice
+        }).ToList();
+
+        await _db.SaveChangesAsync();
+
+        return await _db.Invoices
+            .Include(i => i.Customer)
+            .Include(i => i.Company)
+            .Include(i => i.Lines)
+            .Include(i => i.Allocations)
+            .FirstAsync(i => i.Id == id);
+    }
+
+    /// <summary>
+    /// Ordinary status transitions (Overdue, Cancelled, back to Draft).
     /// Paid/PartiallyPaid are NOT settable here — they're computed from real
     /// payment allocations (see PaymentsController) per §14: "An invoice
     /// should become Paid only when the allocated payment amount covers the
-    /// invoice balance."
+    /// invoice balance." Sent is also not available here — sending is a real
+    /// email with a PDF attached, not a bare status flip; use
+    /// POST /api/invoices/{id}/send instead.
     /// </summary>
     [HttpPost("{id:int}/status/{status}")]
-    [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Accounts)},{nameof(UserRole.Manager)}")]
+    [Authorize(Roles = InvoiceActionRoles)]
     public async Task<IActionResult> SetStatus(int id, InvoiceStatus status)
     {
         if (status is InvoiceStatus.Paid or InvoiceStatus.PartiallyPaid)
             return BadRequest("Paid/PartiallyPaid are computed from payment allocations — use the Payments endpoints instead.");
+
+        if (status == InvoiceStatus.Sent)
+            return BadRequest("Use POST /api/invoices/{id}/send instead — sending emails the customer a PDF of the invoice.");
 
         var invoice = await _db.Invoices.FindAsync(id);
         if (invoice is null) return NotFound();
@@ -119,6 +167,73 @@ public class InvoicesController : ControllerBase
         invoice.PaidOn = null;
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    /// <summary>
+    /// The real "send" action (§ decision): renders a PDF of the invoice and
+    /// emails it to the customer on file, then records SentAt/SentTo and
+    /// moves the invoice from Draft to Sent. Only valid from Draft — an
+    /// invoice that was already sent must be revised back to Draft first
+    /// (this is the resend path, there is no separate "resend while still Sent").
+    /// </summary>
+    [HttpPost("{id:int}/send")]
+    [Authorize(Roles = InvoiceActionRoles)]
+    public async Task<ActionResult<Invoice>> Send(int id)
+    {
+        var invoice = await _db.Invoices
+            .Include(i => i.Customer)
+            .Include(i => i.Company)
+            .Include(i => i.Lines)
+            .FirstOrDefaultAsync(i => i.Id == id);
+        if (invoice is null) return NotFound();
+
+        if (!invoice.CanSend)
+            return BadRequest($"A {invoice.Status} invoice cannot be sent — only draft invoices can be sent.");
+
+        if (string.IsNullOrWhiteSpace(invoice.Customer?.Email))
+            return BadRequest("This customer has no email address on file — add one before sending.");
+
+        var pdfBytes = _pdf.RenderInvoice(invoice);
+        await _email.SendWithAttachmentAsync(
+            toEmail: invoice.Customer.Email!,
+            toName: invoice.Customer.Name,
+            subject: $"Invoice {invoice.Number}",
+            bodyText: $"Hi {invoice.Customer.Name},\n\nPlease find attached invoice {invoice.Number}, total {invoice.Total:C}, due {invoice.DueOn:d}.\n\nRegards,\n{invoice.Company?.Name}",
+            attachmentFileName: $"{invoice.Number}.pdf",
+            attachmentBytes: pdfBytes);
+
+        invoice.Status = InvoiceStatus.Sent;
+        invoice.SentAt = DateTime.UtcNow;
+        invoice.SentTo = invoice.Customer.Email;
+        await _db.SaveChangesAsync();
+
+        return invoice;
+    }
+
+    /// <summary>
+    /// Reverts a Sent (or Overdue) invoice back to Draft so its lines become
+    /// editable again. Paid/PartiallyPaid/Cancelled are final and NOT
+    /// revisable (§ decision).
+    /// </summary>
+    [HttpPost("{id:int}/revise")]
+    [Authorize(Roles = InvoiceActionRoles)]
+    public async Task<ActionResult<Invoice>> Revise(int id)
+    {
+        var invoice = await _db.Invoices.FindAsync(id);
+        if (invoice is null) return NotFound();
+
+        if (!invoice.CanRevise)
+            return BadRequest($"A {invoice.Status} invoice cannot be revised.");
+
+        invoice.Status = InvoiceStatus.Draft;
+        await _db.SaveChangesAsync();
+
+        return await _db.Invoices
+            .Include(i => i.Customer)
+            .Include(i => i.Company)
+            .Include(i => i.Lines)
+            .Include(i => i.Allocations)
+            .FirstAsync(i => i.Id == id);
     }
 
     private async Task<int> NextSequenceAsync()

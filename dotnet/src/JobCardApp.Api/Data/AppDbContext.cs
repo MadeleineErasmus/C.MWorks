@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerItem> CustomerItems => Set<CustomerItem>();
     public DbSet<JobCard> JobCards => Set<JobCard>();
     public DbSet<JobCardLine> JobCardLines => Set<JobCardLine>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
@@ -25,6 +26,17 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.Name).IsRequired().HasMaxLength(200);
             e.HasIndex(x => x.Name);
+        });
+
+        b.Entity<CustomerItem>(e =>
+        {
+            e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            e.HasIndex(x => new { x.CustomerId, x.Name });
+
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<JobCard>(e =>
@@ -56,6 +68,14 @@ public class AppDbContext : DbContext
             e.Property(x => x.Quantity).HasPrecision(18, 2);
             e.Property(x => x.UnitPrice).HasPrecision(18, 2);
             e.Ignore(x => x.LineTotal);
+
+            // Optional — a line can reference a piece of customer equipment,
+            // but if that item is ever removed the line itself must survive
+            // (history is otherwise blocked at the delete endpoint instead).
+            e.HasOne(x => x.CustomerItem)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerItemId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<Invoice>(e =>
@@ -68,6 +88,8 @@ public class AppDbContext : DbContext
             e.Ignore(x => x.Total);
             e.Ignore(x => x.AllocatedAmount);
             e.Ignore(x => x.OutstandingAmount);
+            e.Ignore(x => x.CanSend);
+            e.Ignore(x => x.CanRevise);
 
             e.HasOne(x => x.Customer)
                 .WithMany()
@@ -125,6 +147,7 @@ public class AppDbContext : DbContext
             e.Ignore(x => x.CanAcceptOrReject);
             e.Ignore(x => x.CanConvertToInvoice);
             e.Ignore(x => x.CanDelete);
+            e.Ignore(x => x.CanRevise);
 
             e.HasOne(x => x.Customer)
                 .WithMany()

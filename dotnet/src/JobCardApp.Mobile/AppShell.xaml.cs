@@ -12,7 +12,10 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("customer-edit", typeof(CustomerEditPage));
         Routing.RegisterRoute("company-edit", typeof(CompanyEditPage));
         Routing.RegisterRoute("payment-edit", typeof(PaymentEditPage));
+        Routing.RegisterRoute("quote-edit", typeof(QuoteEditPage));
+        Routing.RegisterRoute("invoice-edit", typeof(InvoiceEditPage));
         Routing.RegisterRoute("statement", typeof(StatementPage));
+        Routing.RegisterRoute("customer-item-history", typeof(CustomerItemHistoryPage));
 
         // Fires once the Shell is part of the visual tree, so Shell.Current
         // navigation is safe to use here.

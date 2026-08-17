@@ -37,7 +37,10 @@ public static class MauiProgram
         builder.Services.AddTransient<CustomerEditViewModel>();
         builder.Services.AddTransient<CompanyEditViewModel>();
         builder.Services.AddTransient<PaymentEditViewModel>();
+        builder.Services.AddTransient<QuoteEditViewModel>();
+        builder.Services.AddTransient<InvoiceEditViewModel>();
         builder.Services.AddTransient<StatementViewModel>();
+        builder.Services.AddTransient<CustomerItemHistoryViewModel>();
         builder.Services.AddTransient<LoginViewModel>();
 
         builder.Services.AddSingleton<JobCardListPage>();
@@ -50,7 +53,10 @@ public static class MauiProgram
         builder.Services.AddTransient<CustomerEditPage>();
         builder.Services.AddTransient<CompanyEditPage>();
         builder.Services.AddTransient<PaymentEditPage>();
+        builder.Services.AddTransient<QuoteEditPage>();
+        builder.Services.AddTransient<InvoiceEditPage>();
         builder.Services.AddTransient<StatementPage>();
+        builder.Services.AddTransient<CustomerItemHistoryPage>();
         builder.Services.AddTransient<LoginPage>();
 
         return builder.Build();

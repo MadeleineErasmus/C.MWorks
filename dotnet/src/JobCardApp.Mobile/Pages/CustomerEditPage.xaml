@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
              xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
              x:Class="JobCardApp.Mobile.Pages.CustomerEditPage"
              x:DataType="vm:CustomerEditViewModel"
@@ -29,6 +30,40 @@
 
                     <Label Text="VAT number" Style="{StaticResource Caption}" />
                     <Entry Text="{Binding VatNumber}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}" IsVisible="{Binding CanDelete}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Equipment" FontAttributes="Bold" />
+
+                    <CollectionView ItemsSource="{Binding Items}">
+                        <CollectionView.EmptyView>
+                            <Label Text="No equipment recorded for this customer yet."
+                                   Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomerItem">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                    <Label Grid.Column="0" Text="{Binding Name}" VerticalOptions="Center" />
+                                    <Button Grid.Column="1"
+                                            Text="History"
+                                            FontSize="12"
+                                            HeightRequest="34"
+                                            Padding="8,0"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=ViewItemHistoryCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0" Text="{Binding NewItemName}" Placeholder="New item name, e.g. Front gate motor" />
+                        <Button Grid.Column="1" Text="Add" Command="{Binding AddItemCommand}" />
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
 

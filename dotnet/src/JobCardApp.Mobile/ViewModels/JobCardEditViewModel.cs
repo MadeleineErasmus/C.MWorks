@@ -42,11 +42,15 @@ public partial class JobCardEditViewModel : ObservableObject
     [ObservableProperty] private LineKind newLineKind = LineKind.Labour;
     [ObservableProperty] private bool isPricingHistoryVisible;
     [ObservableProperty] private bool isPricingHistoryBusy;
+    [ObservableProperty] private CustomerItem? selectedCustomerItem;
+    [ObservableProperty] private bool isAddingNewItem;
+    [ObservableProperty] private string newItemName = string.Empty;
 
     public ObservableCollection<Customer> Customers { get; } = new();
     public ObservableCollection<Company> Companies { get; } = new();
     public ObservableCollection<JobCardLine> Lines { get; } = new();
     public ObservableCollection<PricingHistoryEntry> PricingHistory { get; } = new();
+    public ObservableCollection<CustomerItem> CustomerItems { get; } = new();
     public IReadOnlyList<LineKind> LineKinds { get; } = Enum.GetValues<LineKind>();
 
     public bool HasJobCard => JobCardId > 0;
@@ -64,6 +68,15 @@ public partial class JobCardEditViewModel : ObservableObject
     }
 
     partial void OnJobCardIdChanged(int value) => _ = LoadAsync();
+
+    // Item picker is scoped to whichever customer is currently selected —
+    // reload it whenever that changes, same as pricing history is scoped
+    // per-customer.
+    partial void OnSelectedCustomerChanged(Customer? value)
+    {
+        SelectedCustomerItem = null;
+        _ = LoadCustomerItemsAsync();
+    }
 
     partial void OnIncludeCallOutFeeChanged(bool value)
     {
@@ -141,6 +154,22 @@ public partial class JobCardEditViewModel : ObservableObject
         }
     }
 
+    private async Task LoadCustomerItemsAsync()
+    {
+        CustomerItems.Clear();
+        if (SelectedCustomer is null) return;
+
+        try
+        {
+            var items = await _api.GetCustomerItemsAsync(SelectedCustomer.Id) ?? new List<CustomerItem>();
+            foreach (var item in items) CustomerItems.Add(item);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not load equipment", ex.Message, "OK");
+        }
+    }
+
     [RelayCommand]
     private void AddLine()
     {
@@ -154,13 +183,50 @@ public partial class JobCardEditViewModel : ObservableObject
             Kind = NewLineKind,
             Description = NewLineDescription.Trim(),
             Quantity = qty <= 0 ? 1 : qty,
-            UnitPrice = price
+            UnitPrice = price,
+            CustomerItemId = SelectedCustomerItem?.Id,
+            CustomerItem = SelectedCustomerItem
         });
 
         NewLineDescription = string.Empty;
         NewLineQuantity = "1";
         NewLineUnitPrice = "0";
         IsPricingHistoryVisible = false;
+        // Each new line's item choice is independent — don't carry it forward.
+        SelectedCustomerItem = null;
+    }
+
+    [RelayCommand]
+    private void ToggleAddingNewItem() => IsAddingNewItem = !IsAddingNewItem;
+
+    /// <summary>
+    /// Lets the technician type a new equipment name inline while adding a
+    /// line — created (or found, if it already exists for this customer)
+    /// immediately server-side, then selected for the line being added.
+    /// </summary>
+    [RelayCommand]
+    private async Task AddNewCustomerItemAsync()
+    {
+        if (SelectedCustomer is null || string.IsNullOrWhiteSpace(NewItemName)) return;
+
+        try
+        {
+            var item = await _api.CreateCustomerItemAsync(SelectedCustomer.Id, NewItemName.Trim());
+            if (item is not null)
+            {
+                var existing = CustomerItems.FirstOrDefault(i => i.Id == item.Id);
+                if (existing is null) CustomerItems.Add(item);
+                SelectedCustomerItem = existing ?? item;
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not add equipment", ex.Message, "OK");
+            return;
+        }
+
+        NewItemName = string.Empty;
+        IsAddingNewItem = false;
     }
 
     [RelayCommand]

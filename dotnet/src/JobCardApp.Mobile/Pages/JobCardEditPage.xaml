@@ -87,6 +87,10 @@
                                                 </FormattedString>
                                             </Label.FormattedText>
                                         </Label>
+                                        <Label Text="{Binding CustomerItem.Name, StringFormat='Item: {0}'}"
+                                               Style="{StaticResource Caption}"
+                                               TextColor="{StaticResource Brand}"
+                                               IsVisible="{Binding CustomerItem, Converter={x:Static vm:NotNullConverter.Instance}}" />
                                     </VerticalStackLayout>
 
                                     <Label Grid.Column="1"
@@ -113,6 +117,25 @@
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Entry Grid.Column="0" Text="{Binding NewLineQuantity}" Keyboard="Numeric" Placeholder="Qty" />
                         <Entry Grid.Column="1" Text="{Binding NewLineUnitPrice}" Keyboard="Numeric" Placeholder="Unit price" />
+                    </Grid>
+
+                    <Label Text="Item (optional)" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding CustomerItems}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCustomerItem}" />
+
+                    <Button Text="+ Add new item"
+                            FontSize="13"
+                            HeightRequest="34"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource Brand}"
+                            Command="{Binding ToggleAddingNewItemCommand}" />
+
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="8"
+                          IsVisible="{Binding IsAddingNewItem}">
+                        <Entry Grid.Column="0" Text="{Binding NewItemName}" Placeholder="New item name, e.g. Front gate motor" />
+                        <Button Grid.Column="1" Text="Add" Command="{Binding AddNewCustomerItemCommand}" />
                     </Grid>
 
                     <Button Text="Check previous pricing for this customer"
