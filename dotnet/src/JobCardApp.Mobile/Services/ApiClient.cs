@@ -135,6 +135,25 @@ public class ApiClient
     public Task<CustomerItem?> GetCustomerItemAsync(int itemId)
         => _http.GetFromJsonAsync<CustomerItem>($"api/customer-items/{itemId}", JsonOptions);
 
+    // Customer emails
+    public Task<List<CustomerEmail>?> GetCustomerEmailsAsync(int customerId)
+        => _http.GetFromJsonAsync<List<CustomerEmail>>($"api/customers/{customerId}/emails", JsonOptions);
+
+    public async Task<CustomerEmail?> AddCustomerEmailAsync(int customerId, string email)
+    {
+        var response = await _http.PostAsJsonAsync($"api/customers/{customerId}/emails", new CustomerEmail { Email = email });
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<CustomerEmail>(JsonOptions);
+    }
+
+    public async Task DeleteCustomerEmailAsync(int emailId)
+    {
+        var response = await _http.DeleteAsync($"api/customer-emails/{emailId}");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
     // Job cards
     public Task<List<JobCard>?> GetJobCardsAsync()
         => _http.GetFromJsonAsync<List<JobCard>>("api/jobcards", JsonOptions);

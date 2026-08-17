@@ -190,6 +190,70 @@ public class CustomersController : ControllerBase
         return CreatedAtAction(nameof(GetItems), new { id }, created);
     }
 
+    /// <summary>
+    /// Additional recipients for this customer's quote/invoice PDFs, on top
+    /// of the primary <see cref="Customer.Email"/> — e.g. an accounts
+    /// department or a manager who also needs a copy.
+    /// </summary>
+    [HttpGet("{id:int}/emails")]
+    public async Task<ActionResult<List<CustomerEmail>>> GetEmails(int id)
+    {
+        if (!await _db.Customers.AnyAsync(c => c.Id == id))
+            return NotFound();
+
+        return await _db.CustomerEmails
+            .Where(e => e.CustomerId == id)
+            .OrderBy(e => e.Email)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Find-or-create, same reasoning as CreateItem: adding the same address
+    /// twice for a customer must resolve to the same row, not duplicate it.
+    /// Also rejects an address that's just a copy of the primary Email — that
+    /// one's already covered and doesn't need a second row.
+    /// </summary>
+    [HttpPost("{id:int}/emails")]
+    public async Task<ActionResult<CustomerEmail>> CreateEmail(int id, CustomerEmail email)
+    {
+        var customer = await _db.Customers.FindAsync(id);
+        if (customer is null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(email.Email))
+            return BadRequest("Email is required.");
+
+        var address = email.Email.Trim();
+        if (!IsPlausibleEmail(address))
+            return BadRequest("That doesn't look like a valid email address.");
+
+        if (!string.IsNullOrWhiteSpace(customer.Email) &&
+            string.Equals(customer.Email.Trim(), address, StringComparison.OrdinalIgnoreCase))
+            return BadRequest("This is already the primary email for this customer.");
+
+        var existing = await _db.CustomerEmails
+            .FirstOrDefaultAsync(e => e.CustomerId == id && e.Email.ToLower() == address.ToLower());
+        if (existing is not null)
+            return existing;
+
+        var created = new CustomerEmail
+        {
+            CustomerId = id,
+            Email = address,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.CustomerEmails.Add(created);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetEmails), new { id }, created);
+    }
+
+    private static bool IsPlausibleEmail(string address)
+    {
+        // Deliberately loose — just enough to catch obvious typos ("foo",
+        // "foo@") rather than fully validating RFC 5322.
+        var at = address.IndexOf('@');
+        return at > 0 && at < address.Length - 1 && !address.Contains(' ') && address.IndexOf('.', at) > at;
+    }
+
     [HttpPost]
     public async Task<ActionResult<Customer>> Create(Customer customer)
     {

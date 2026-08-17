@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<CustomerItem> CustomerItems => Set<CustomerItem>();
+    public DbSet<CustomerEmail> CustomerEmails => Set<CustomerEmail>();
     public DbSet<JobCard> JobCards => Set<JobCard>();
     public DbSet<JobCardLine> JobCardLines => Set<JobCardLine>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
@@ -32,6 +33,17 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.Name).IsRequired().HasMaxLength(200);
             e.HasIndex(x => new { x.CustomerId, x.Name });
+
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CustomerEmail>(e =>
+        {
+            e.Property(x => x.Email).IsRequired().HasMaxLength(200);
+            e.HasIndex(x => new { x.CustomerId, x.Email });
 
             e.HasOne(x => x.Customer)
                 .WithMany()

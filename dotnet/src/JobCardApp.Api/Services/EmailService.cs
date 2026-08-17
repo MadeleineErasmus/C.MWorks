@@ -20,14 +20,29 @@ public class EmailService
         _config = config;
     }
 
+    /// <summary>
+    /// Sends the same PDF to every recipient in <paramref name="toEmails"/> —
+    /// e.g. a customer's primary email plus any additional addresses
+    /// (accounts department, a manager) on file for them. No per-recipient
+    /// display name is used; the customer's name belongs in the body/greeting
+    /// once, not on each address.
+    /// </summary>
     public async Task SendWithAttachmentAsync(
-        string toEmail,
-        string toName,
+        IEnumerable<string> toEmails,
         string subject,
         string bodyText,
         string attachmentFileName,
         byte[] attachmentBytes)
     {
+        var recipients = toEmails
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (recipients.Count == 0)
+            throw new InvalidOperationException("No recipient email addresses were supplied.");
+
         var host = _config["Smtp:Host"];
         if (string.IsNullOrWhiteSpace(host))
         {
@@ -49,7 +64,8 @@ public class EmailService
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(fromName, fromAddress));
-        message.To.Add(new MailboxAddress(toName, toEmail));
+        foreach (var recipient in recipients)
+            message.To.Add(new MailboxAddress(recipient, recipient));
         message.Subject = subject;
 
         var builder = new BodyBuilder { TextBody = bodyText };

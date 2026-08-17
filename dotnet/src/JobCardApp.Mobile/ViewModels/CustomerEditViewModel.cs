@@ -23,8 +23,10 @@ public partial class CustomerEditViewModel : ObservableObject
     [ObservableProperty] private string? vatNumber;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string newItemName = string.Empty;
+    [ObservableProperty] private string newInvoiceEmail = string.Empty;
 
     public ObservableCollection<CustomerItem> Items { get; } = new();
+    public ObservableCollection<CustomerEmail> InvoiceEmails { get; } = new();
 
     public bool CanDelete => CustomerId > 0;
 
@@ -54,6 +56,10 @@ public partial class CustomerEditViewModel : ObservableObject
             var items = await _api.GetCustomerItemsAsync(CustomerId) ?? new List<CustomerItem>();
             Items.Clear();
             foreach (var item in items) Items.Add(item);
+
+            var emails = await _api.GetCustomerEmailsAsync(CustomerId) ?? new List<CustomerEmail>();
+            InvoiceEmails.Clear();
+            foreach (var email in emails) InvoiceEmails.Add(email);
         }
         catch (Exception ex)
         {
@@ -96,6 +102,53 @@ public partial class CustomerEditViewModel : ObservableObject
     [RelayCommand]
     private Task ViewItemHistoryAsync(CustomerItem item)
         => Shell.Current.GoToAsync($"customer-item-history?id={item.Id}");
+
+    /// <summary>
+    /// Additional recipients for this customer's quote/invoice PDFs, on top
+    /// of the primary Email field above — find-or-create server side so a
+    /// repeated address never duplicates.
+    /// </summary>
+    [RelayCommand]
+    private async Task AddInvoiceEmailAsync()
+    {
+        if (CustomerId <= 0)
+        {
+            await Shell.Current.DisplayAlert("Save the customer first", "Additional invoice emails can be added once the customer has been saved.", "OK");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(NewInvoiceEmail)) return;
+
+        try
+        {
+            var email = await _api.AddCustomerEmailAsync(CustomerId, NewInvoiceEmail.Trim());
+            if (email is not null && InvoiceEmails.All(e => e.Id != email.Id))
+                InvoiceEmails.Add(email);
+            NewInvoiceEmail = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not add email", ex.Message, "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveInvoiceEmailAsync(CustomerEmail email)
+    {
+        var confirmed = await Shell.Current.DisplayAlert(
+            "Remove email", $"Remove {email.Email} from this customer's invoice emails?", "Remove", "Cancel");
+        if (!confirmed) return;
+
+        try
+        {
+            await _api.DeleteCustomerEmailAsync(email.Id);
+            var existing = InvoiceEmails.FirstOrDefault(e => e.Id == email.Id);
+            if (existing is not null) InvoiceEmails.Remove(existing);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not remove email", ex.Message, "OK");
+        }
+    }
 
     [RelayCommand]
     private async Task SaveAsync()

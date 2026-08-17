@@ -190,13 +190,24 @@ public class InvoicesController : ControllerBase
         if (!invoice.CanSend)
             return BadRequest($"A {invoice.Status} invoice cannot be sent — only draft invoices can be sent.");
 
-        if (string.IsNullOrWhiteSpace(invoice.Customer?.Email))
+        var additionalEmails = await _db.CustomerEmails
+            .Where(e => e.CustomerId == invoice.CustomerId)
+            .Select(e => e.Email)
+            .ToListAsync();
+
+        var recipients = new[] { invoice.Customer.Email }
+            .Concat(additionalEmails)
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (recipients.Count == 0)
             return BadRequest("This customer has no email address on file — add one before sending.");
 
         var pdfBytes = _pdf.RenderInvoice(invoice);
         await _email.SendWithAttachmentAsync(
-            toEmail: invoice.Customer.Email!,
-            toName: invoice.Customer.Name,
+            toEmails: recipients,
             subject: $"Invoice {invoice.Number}",
             bodyText: $"Hi {invoice.Customer.Name},\n\nPlease find attached invoice {invoice.Number}, total {invoice.Total:C}, due {invoice.DueOn:d}.\n\nRegards,\n{invoice.Company?.Name}",
             attachmentFileName: $"{invoice.Number}.pdf",
@@ -204,7 +215,7 @@ public class InvoicesController : ControllerBase
 
         invoice.Status = InvoiceStatus.Sent;
         invoice.SentAt = DateTime.UtcNow;
-        invoice.SentTo = invoice.Customer.Email;
+        invoice.SentTo = string.Join(", ", recipients);
         await _db.SaveChangesAsync();
 
         return invoice;

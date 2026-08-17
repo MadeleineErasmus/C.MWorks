@@ -74,6 +74,45 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Invoice emails" FontAttributes="Bold" />
+                    <Label Text="The Email field above always receives quotes and invoices. Add any extra addresses (e.g. accounts department, a manager) that should also get a copy."
+                           Style="{StaticResource Caption}" />
+                    <Label Text="Save the customer first, then add additional emails here."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanDelete, Converter={x:Static vm:InverseBoolConverter.Instance}}" />
+
+                    <CollectionView ItemsSource="{Binding InvoiceEmails}">
+                        <CollectionView.EmptyView>
+                            <Label Text="No additional invoice emails for this customer yet."
+                                   Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomerEmail">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                    <Label Grid.Column="0" Text="{Binding Email}" VerticalOptions="Center" />
+                                    <Button Grid.Column="1"
+                                            Text="Remove"
+                                            FontSize="12"
+                                            HeightRequest="34"
+                                            Padding="8,0"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=RemoveInvoiceEmailCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0" Text="{Binding NewInvoiceEmail}" Keyboard="Email" Placeholder="accounts@example.com" />
+                        <Button Grid.Column="1" Text="Add" Command="{Binding AddInvoiceEmailCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
             <Button Text="Save customer" Command="{Binding SaveCommand}" />
 
             <Button Text="View statement"

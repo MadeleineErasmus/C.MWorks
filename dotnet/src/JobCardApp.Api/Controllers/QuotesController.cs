@@ -188,13 +188,24 @@ public class QuotesController : ControllerBase
         if (!quote.CanSend)
             return BadRequest($"A {quote.Status} quote cannot be sent — only draft quotes can be sent.");
 
-        if (string.IsNullOrWhiteSpace(quote.Customer?.Email))
+        var additionalEmails = await _db.CustomerEmails
+            .Where(e => e.CustomerId == quote.CustomerId)
+            .Select(e => e.Email)
+            .ToListAsync();
+
+        var recipients = new[] { quote.Customer.Email }
+            .Concat(additionalEmails)
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (recipients.Count == 0)
             return BadRequest("This customer has no email address on file — add one before sending.");
 
         var pdfBytes = _pdf.RenderQuote(quote);
         await _email.SendWithAttachmentAsync(
-            toEmail: quote.Customer.Email!,
-            toName: quote.Customer.Name,
+            toEmails: recipients,
             subject: $"Quote {quote.Number}",
             bodyText: $"Hi {quote.Customer.Name},\n\nPlease find attached quote {quote.Number}, total {quote.Total:C}.\n\nRegards,\n{quote.Company?.Name}",
             attachmentFileName: $"{quote.Number}.pdf",
@@ -202,7 +213,7 @@ public class QuotesController : ControllerBase
 
         quote.Status = QuoteStatus.Sent;
         quote.SentAt = DateTime.UtcNow;
-        quote.SentTo = quote.Customer.Email;
+        quote.SentTo = string.Join(", ", recipients);
         await _db.SaveChangesAsync();
 
         return quote;
