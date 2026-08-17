@@ -75,7 +75,7 @@
                     <Entry Text="{Binding AllocateAmount}" Keyboard="Numeric" Placeholder="Amount to allocate" />
                     <Button Text="Allocate" Command="{Binding AllocateCommand}" />
 
-                    <BoxView HeightRequest="1" Color="#E2E8E7" />
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
 
                     <CollectionView ItemsSource="{Binding Allocations}">
                         <CollectionView.EmptyView>

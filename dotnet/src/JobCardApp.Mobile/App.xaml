@@ -4,10 +4,11 @@
              x:Class="JobCardApp.Mobile.App">
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="Brand">#1F6F6B</Color>
-            <Color x:Key="BrandDark">#134B48</Color>
-            <Color x:Key="Muted">#6B7B7A</Color>
-            <Color x:Key="Surface">#F5F7F6</Color>
+            <Color x:Key="Brand">#5B3A99</Color>
+            <Color x:Key="BrandDark">#3D2670</Color>
+            <Color x:Key="Muted">#7D6F94</Color>
+            <Color x:Key="Surface">#F7F5FB</Color>
+            <Color x:Key="Border">#E4DEEF</Color>
 
             <Style TargetType="Button">
                 <Setter Property="BackgroundColor" Value="{StaticResource Brand}" />
@@ -19,7 +20,7 @@
 
             <Style x:Key="CardFrame" TargetType="Border">
                 <Setter Property="BackgroundColor" Value="White" />
-                <Setter Property="Stroke" Value="#E2E8E7" />
+                <Setter Property="Stroke" Value="{StaticResource Border}" />
                 <Setter Property="Padding" Value="14" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 12" />
             </Style>

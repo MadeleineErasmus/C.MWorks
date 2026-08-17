@@ -106,7 +106,7 @@
                         </CollectionView.ItemTemplate>
                     </CollectionView>
 
-                    <BoxView HeightRequest="1" Color="#E2E8E7" />
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
 
                     <Picker ItemsSource="{Binding LineKinds}" SelectedItem="{Binding NewLineKind}" />
                     <Entry Text="{Binding NewLineDescription}" Placeholder="Description" />
