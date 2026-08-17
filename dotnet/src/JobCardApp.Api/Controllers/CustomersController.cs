@@ -162,6 +162,10 @@ public class CustomersController : ControllerBase
     /// Find-or-create: called both from the customer page's "add item" entry
     /// and inline while adding a job card line, so a name typed twice for the
     /// same customer must resolve to the same item rather than duplicating it.
+    /// Category is part of the item's identity — "Front" under "Motor" and
+    /// "Front" under "Camera" are different items, not duplicates — so the
+    /// match is on both Category and Name (case-insensitive; a null/blank
+    /// category matches another null/blank category).
     /// </summary>
     [HttpPost("{id:int}/items")]
     public async Task<ActionResult<CustomerItem>> CreateItem(int id, CustomerItem item)
@@ -173,16 +177,21 @@ public class CustomersController : ControllerBase
             return BadRequest("Name is required.");
 
         var name = item.Name.Trim();
+        var category = string.IsNullOrWhiteSpace(item.Category) ? null : item.Category.Trim();
 
         var existing = await _db.CustomerItems
-            .FirstOrDefaultAsync(i => i.CustomerId == id && i.Name.ToLower() == name.ToLower());
-        if (existing is not null)
-            return existing;
+            .Where(i => i.CustomerId == id && i.Name.ToLower() == name.ToLower())
+            .ToListAsync();
+        var match = existing.FirstOrDefault(i =>
+            string.Equals(i.Category ?? string.Empty, category ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+        if (match is not null)
+            return match;
 
         var created = new CustomerItem
         {
             CustomerId = id,
             Name = name,
+            Category = category,
             CreatedAt = DateTime.UtcNow
         };
         _db.CustomerItems.Add(created);

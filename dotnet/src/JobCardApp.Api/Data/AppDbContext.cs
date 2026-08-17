@@ -32,7 +32,9 @@ public class AppDbContext : DbContext
         b.Entity<CustomerItem>(e =>
         {
             e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            e.Property(x => x.Category).HasMaxLength(200);
             e.HasIndex(x => new { x.CustomerId, x.Name });
+            e.Ignore(x => x.DisplayName);
 
             e.HasOne(x => x.Customer)
                 .WithMany()

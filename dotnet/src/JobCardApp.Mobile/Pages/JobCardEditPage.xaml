@@ -121,7 +121,7 @@
 
                     <Label Text="Item (optional)" Style="{StaticResource Caption}" />
                     <Picker ItemsSource="{Binding CustomerItems}"
-                            ItemDisplayBinding="{Binding Name}"
+                            ItemDisplayBinding="{Binding DisplayName}"
                             SelectedItem="{Binding SelectedCustomerItem}" />
 
                     <Label Text="Not on the list? Type a new item name and add it:" Style="{StaticResource Caption}" />

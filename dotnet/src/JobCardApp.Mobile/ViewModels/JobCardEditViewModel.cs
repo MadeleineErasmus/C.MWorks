@@ -207,7 +207,7 @@ public partial class JobCardEditViewModel : ObservableObject
 
         try
         {
-            var item = await _api.CreateCustomerItemAsync(SelectedCustomer.Id, NewItemName.Trim());
+            var item = await _api.CreateCustomerItemAsync(SelectedCustomer.Id, NewItemName.Trim(), category: null);
             if (item is not null)
             {
                 var existing = CustomerItems.FirstOrDefault(i => i.Id == item.Id);

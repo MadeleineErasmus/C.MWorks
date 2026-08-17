@@ -121,9 +121,9 @@ public class ApiClient
     public Task<List<CustomerItem>?> GetCustomerItemsAsync(int customerId)
         => _http.GetFromJsonAsync<List<CustomerItem>>($"api/customers/{customerId}/items", JsonOptions);
 
-    public async Task<CustomerItem?> CreateCustomerItemAsync(int customerId, string name)
+    public async Task<CustomerItem?> CreateCustomerItemAsync(int customerId, string name, string? category)
     {
-        var response = await _http.PostAsJsonAsync($"api/customers/{customerId}/items", new CustomerItem { Name = name });
+        var response = await _http.PostAsJsonAsync($"api/customers/{customerId}/items", new CustomerItem { Name = name, Category = category });
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
         return await response.Content.ReadFromJsonAsync<CustomerItem>(JsonOptions);

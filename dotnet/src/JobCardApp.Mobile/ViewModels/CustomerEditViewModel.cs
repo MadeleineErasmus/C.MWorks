@@ -23,9 +23,13 @@ public partial class CustomerEditViewModel : ObservableObject
     [ObservableProperty] private string? vatNumber;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string newItemName = string.Empty;
+    [ObservableProperty] private string? selectedCategory;
+    [ObservableProperty] private string newCategoryName = string.Empty;
     [ObservableProperty] private string newInvoiceEmail = string.Empty;
 
     public ObservableCollection<CustomerItem> Items { get; } = new();
+    public ObservableCollection<string> Categories { get; } = new();
+    public ObservableCollection<CustomerItemGroup> GroupedItems { get; } = new();
     public ObservableCollection<CustomerEmail> InvoiceEmails { get; } = new();
 
     public bool CanDelete => CustomerId > 0;
@@ -56,6 +60,8 @@ public partial class CustomerEditViewModel : ObservableObject
             var items = await _api.GetCustomerItemsAsync(CustomerId) ?? new List<CustomerItem>();
             Items.Clear();
             foreach (var item in items) Items.Add(item);
+            RebuildCategories();
+            RebuildGroupedItems();
 
             var emails = await _api.GetCustomerEmailsAsync(CustomerId) ?? new List<CustomerEmail>();
             InvoiceEmails.Clear();
@@ -74,7 +80,11 @@ public partial class CustomerEditViewModel : ObservableObject
     /// <summary>
     /// Lets office/technicians add equipment directly on the customer, not
     /// only inline while creating a job card line — find-or-create server
-    /// side so a repeated name never duplicates.
+    /// side so a repeated name (within the same category) never duplicates.
+    /// Category comes from whichever of NewCategoryName (typed) or
+    /// SelectedCategory (picked) was used most recently — they're kept
+    /// mutually exclusive by the OnXChanged handlers below, so NewCategoryName
+    /// wins whenever it's non-blank.
     /// </summary>
     [RelayCommand]
     private async Task AddItemAsync()
@@ -86,17 +96,58 @@ public partial class CustomerEditViewModel : ObservableObject
         }
         if (string.IsNullOrWhiteSpace(NewItemName)) return;
 
+        var category = string.IsNullOrWhiteSpace(NewCategoryName) ? SelectedCategory : NewCategoryName.Trim();
+
         try
         {
-            var item = await _api.CreateCustomerItemAsync(CustomerId, NewItemName.Trim());
+            var item = await _api.CreateCustomerItemAsync(CustomerId, NewItemName.Trim(), category);
             if (item is not null && Items.All(i => i.Id != item.Id))
                 Items.Add(item);
             NewItemName = string.Empty;
+            NewCategoryName = string.Empty;
+            RebuildCategories();
+            RebuildGroupedItems();
         }
         catch (Exception ex)
         {
             await Shell.Current.DisplayAlert("Could not add equipment", ex.Message, "OK");
         }
+    }
+
+    /// <summary>Typing a brand-new category takes precedence — picking from the list afterwards clears it back out, and vice versa, so AddItemAsync always has one unambiguous value to send.</summary>
+    partial void OnNewCategoryNameChanged(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            SelectedCategory = null;
+    }
+
+    partial void OnSelectedCategoryChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            NewCategoryName = string.Empty;
+    }
+
+    private void RebuildCategories()
+    {
+        var categories = Items
+            .Where(i => !string.IsNullOrWhiteSpace(i.Category))
+            .Select(i => i.Category!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase);
+
+        Categories.Clear();
+        foreach (var category in categories) Categories.Add(category);
+    }
+
+    private void RebuildGroupedItems()
+    {
+        var groups = Items
+            .GroupBy(i => string.IsNullOrWhiteSpace(i.Category) ? "Uncategorised" : i.Category!, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new CustomerItemGroup(g.Key, g.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase)));
+
+        GroupedItems.Clear();
+        foreach (var group in groups) GroupedItems.Add(group);
     }
 
     [RelayCommand]
@@ -215,4 +266,17 @@ public partial class CustomerEditViewModel : ObservableObject
             IsBusy = false;
         }
     }
+}
+
+/// <summary>
+/// One category's worth of equipment for the Equipment CollectionView's
+/// IsGrouped display (e.g. all "Motor" items). Category is never null here —
+/// items without one are bucketed under "Uncategorised" by RebuildGroupedItems.
+/// </summary>
+public class CustomerItemGroup : List<CustomerItem>
+{
+    public string Category { get; }
+
+    public CustomerItemGroup(string category, IEnumerable<CustomerItem> items) : base(items)
+        => Category = category;
 }

@@ -21,7 +21,7 @@
 
             <Border Style="{StaticResource CardFrame}">
                 <VerticalStackLayout Spacing="8">
-                    <CollectionView ItemsSource="{Binding Entries}">
+                    <CollectionView ItemsSource="{Binding Entries}" HeightRequest="300">
                         <CollectionView.EmptyView>
                             <Label Text="No recorded changes for this item yet."
                                    Style="{StaticResource Caption}"
