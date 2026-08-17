@@ -21,6 +21,7 @@ public class JobCardsController : ControllerBase
         var query = _db.JobCards
             .Include(j => j.Customer)
             .Include(j => j.Company)
+            .Include(j => j.Site)
             .Include(j => j.Lines).ThenInclude(l => l.CustomerItem)
             .AsQueryable();
 
@@ -36,6 +37,7 @@ public class JobCardsController : ControllerBase
         var jobCard = await _db.JobCards
             .Include(j => j.Customer)
             .Include(j => j.Company)
+            .Include(j => j.Site)
             .Include(j => j.Lines).ThenInclude(l => l.CustomerItem)
             .FirstOrDefaultAsync(j => j.Id == id);
 
@@ -48,6 +50,7 @@ public class JobCardsController : ControllerBase
         jobCard.Id = 0;
         jobCard.Customer = null;
         jobCard.Company = null;
+        jobCard.Site = null;
         jobCard.CreatedAt = DateTime.UtcNow;
 
         // Status is server-owned from creation onward — see /complete, /cancel,
@@ -84,6 +87,7 @@ public class JobCardsController : ControllerBase
         existing.CompanyId = jobCard.CompanyId;
         existing.Title = jobCard.Title;
         existing.Description = jobCard.Description;
+        existing.SiteId = jobCard.SiteId;
         existing.SiteAddress = jobCard.SiteAddress;
         existing.Technician = jobCard.Technician;
         existing.ScheduledFor = jobCard.ScheduledFor;

@@ -34,6 +34,11 @@ public partial class JobCardEditViewModel : ObservableObject
     [ObservableProperty] private bool includeCallOutFee;
 
     private decimal _defaultCallOutFee = 500m;
+    // Suppresses the SiteAddress autofill while LoadAsync is restoring a
+    // saved SelectedSite — that's a re-selection of existing state, not the
+    // user picking a site, so it must not overwrite the job card's own saved
+    // SiteAddress text (which may have drifted from the site's address).
+    private bool _restoringSite;
 
     // New line entry fields
     [ObservableProperty] private string newLineDescription = string.Empty;
@@ -44,12 +49,15 @@ public partial class JobCardEditViewModel : ObservableObject
     [ObservableProperty] private bool isPricingHistoryBusy;
     [ObservableProperty] private CustomerItem? selectedCustomerItem;
     [ObservableProperty] private string newItemName = string.Empty;
+    [ObservableProperty] private CustomerSite? selectedSite;
+    [ObservableProperty] private string newSiteName = string.Empty;
 
     public ObservableCollection<Customer> Customers { get; } = new();
     public ObservableCollection<Company> Companies { get; } = new();
     public ObservableCollection<JobCardLine> Lines { get; } = new();
     public ObservableCollection<PricingHistoryEntry> PricingHistory { get; } = new();
     public ObservableCollection<CustomerItem> CustomerItems { get; } = new();
+    public ObservableCollection<CustomerSite> Sites { get; } = new();
     public IReadOnlyList<LineKind> LineKinds { get; } = Enum.GetValues<LineKind>();
 
     public bool HasJobCard => JobCardId > 0;
@@ -74,7 +82,21 @@ public partial class JobCardEditViewModel : ObservableObject
     partial void OnSelectedCustomerChanged(Customer? value)
     {
         SelectedCustomerItem = null;
+        SelectedSite = null;
         _ = LoadCustomerItemsAsync();
+        _ = LoadSitesAsync();
+    }
+
+    /// <summary>
+    /// Picking a saved site copies its address into the free-text
+    /// SiteAddress field as a one-time autofill — SiteAddress stays a
+    /// separate bound property, so the user can still freely edit it
+    /// afterwards (e.g. for a one-off site or to tweak the picked address).
+    /// </summary>
+    partial void OnSelectedSiteChanged(CustomerSite? value)
+    {
+        if (value is not null && !_restoringSite)
+            SiteAddress = value.Address;
     }
 
     partial void OnIncludeCallOutFeeChanged(bool value)
@@ -121,11 +143,21 @@ public partial class JobCardEditViewModel : ObservableObject
                 {
                     Title = card.Title;
                     Description = card.Description;
-                    SiteAddress = card.SiteAddress;
                     Technician = card.Technician;
                     Status = card.Status;
                     SelectedCustomer = Customers.FirstOrDefault(c => c.Id == card.CustomerId);
                     SelectedCompany = Companies.FirstOrDefault(c => c.Id == card.CompanyId);
+
+                    // OnSelectedCustomerChanged already kicked off a site
+                    // reload above — await it directly here so Sites is
+                    // populated before restoring which one was picked.
+                    await LoadSitesAsync();
+                    _restoringSite = true;
+                    SelectedSite = Sites.FirstOrDefault(s => s.Id == card.SiteId);
+                    _restoringSite = false;
+                    // Set after SelectedSite so the restore above can't
+                    // clobber it via the autofill guard race.
+                    SiteAddress = card.SiteAddress;
 
                     Lines.Clear();
                     foreach (var line in card.Lines) Lines.Add(line);
@@ -166,6 +198,22 @@ public partial class JobCardEditViewModel : ObservableObject
         catch (Exception ex)
         {
             await Shell.Current.DisplayAlert("Could not load equipment", ex.Message, "OK");
+        }
+    }
+
+    private async Task LoadSitesAsync()
+    {
+        Sites.Clear();
+        if (SelectedCustomer is null) return;
+
+        try
+        {
+            var sites = await _api.GetCustomerSitesAsync(SelectedCustomer.Id) ?? new List<CustomerSite>();
+            foreach (var site in sites) Sites.Add(site);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not load sites", ex.Message, "OK");
         }
     }
 
@@ -222,6 +270,45 @@ public partial class JobCardEditViewModel : ObservableObject
         }
 
         NewItemName = string.Empty;
+    }
+
+    /// <summary>
+    /// Lets the technician save the currently-typed SiteAddress as a new
+    /// named site for this customer, right from the job card — the address
+    /// text already in the field becomes the new site's address, so this is
+    /// "not on the list? name it" rather than a separate address entry.
+    /// </summary>
+    [RelayCommand]
+    private async Task AddSiteAsync()
+    {
+        if (SelectedCustomer is null || string.IsNullOrWhiteSpace(NewSiteName)) return;
+
+        if (string.IsNullOrWhiteSpace(SiteAddress))
+        {
+            await Shell.Current.DisplayAlert("Missing address", "Enter the site address above before saving it as a new site.", "OK");
+            return;
+        }
+
+        try
+        {
+            var site = await _api.AddCustomerSiteAsync(SelectedCustomer.Id, NewSiteName.Trim(), SiteAddress.Trim());
+            if (site is not null)
+            {
+                var existing = Sites.FirstOrDefault(s => s.Id == site.Id);
+                if (existing is null) Sites.Add(site);
+                // Not suppressed: if this name already existed for the
+                // customer, the server kept its original address — let the
+                // normal autofill sync SiteAddress to that real saved value.
+                SelectedSite = existing ?? site;
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not add site", ex.Message, "OK");
+            return;
+        }
+
+        NewSiteName = string.Empty;
     }
 
     [RelayCommand]
@@ -366,6 +453,7 @@ public partial class JobCardEditViewModel : ObservableObject
             CompanyId = SelectedCompany?.Id,
             Title = Title.Trim(),
             Description = Description,
+            SiteId = SelectedSite?.Id,
             SiteAddress = SiteAddress,
             Technician = Technician,
             Status = Status,

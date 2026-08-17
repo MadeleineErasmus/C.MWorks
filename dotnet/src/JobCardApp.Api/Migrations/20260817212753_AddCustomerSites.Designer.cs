@@ -4,6 +4,7 @@ using JobCardApp.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobCardApp.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817212753_AddCustomerSites")]
+    partial class AddCustomerSites
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -331,9 +334,6 @@ namespace JobCardApp.Api.Migrations
                     b.Property<string>("SiteAddress")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("SiteId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -353,8 +353,6 @@ namespace JobCardApp.Api.Migrations
 
                     b.HasIndex("Reference")
                         .IsUnique();
-
-                    b.HasIndex("SiteId");
 
                     b.ToTable("JobCards");
                 });
@@ -679,16 +677,9 @@ namespace JobCardApp.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("JobCardApp.Shared.Models.CustomerSite", "Site")
-                        .WithMany()
-                        .HasForeignKey("SiteId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Company");
 
                     b.Navigation("Customer");
-
-                    b.Navigation("Site");
                 });
 
             modelBuilder.Entity("JobCardApp.Shared.Models.JobCardLine", b =>

@@ -122,6 +122,52 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Sites" FontAttributes="Bold" />
+                    <Label Text="Save addresses for this customer's premises (e.g. Head office, Warehouse) so they can be picked quickly on a job card."
+                           Style="{StaticResource Caption}" />
+                    <Label Text="Save the customer first, then add sites here."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanDelete, Converter={x:Static vm:InverseBoolConverter.Instance}}" />
+
+                    <CollectionView ItemsSource="{Binding Sites}" HeightRequest="160">
+                        <CollectionView.EmptyView>
+                            <Label Text="No sites recorded for this customer yet."
+                                   Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomerSite">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Name}" />
+                                        <Label Text="{Binding Address}" Style="{StaticResource Caption}" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="1"
+                                            Text="Remove"
+                                            FontSize="12"
+                                            HeightRequest="34"
+                                            Padding="8,0"
+                                            VerticalOptions="Start"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=RemoveSiteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <Label Text="Site name" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding NewSiteName}" Placeholder="e.g. Head office" />
+
+                    <Label Text="Site address" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding NewSiteAddress}" HeightRequest="80" />
+
+                    <Button Text="Add" Command="{Binding AddSiteCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
             <Button Text="Save customer" Command="{Binding SaveCommand}" />
 
             <Button Text="View statement"

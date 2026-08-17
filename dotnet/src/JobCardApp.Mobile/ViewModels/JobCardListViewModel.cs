@@ -16,6 +16,13 @@ public partial class JobCardListViewModel : ObservableObject
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string? error;
 
+    public IReadOnlyList<JobCardStatusFilterOption> StatusFilterOptions { get; } =
+        new JobCardStatusFilterOption[] { new("All statuses", null) }
+            .Concat(Enum.GetValues<JobCardStatus>().Select(s => new JobCardStatusFilterOption(s.ToString(), s)))
+            .ToList();
+
+    [ObservableProperty] private JobCardStatusFilterOption selectedStatusFilter;
+
     public string? SignedInAs => _authState.DisplayName is null
         ? null
         : $"{_authState.DisplayName} ({_authState.Role})";
@@ -24,7 +31,12 @@ public partial class JobCardListViewModel : ObservableObject
     {
         _api = api;
         _authState = authState;
+        // Open job cards are what a technician needs to see day to day —
+        // completed/invoiced/cancelled ones would otherwise bury them.
+        selectedStatusFilter = StatusFilterOptions.First(o => o.Status == JobCardStatus.Open);
     }
+
+    partial void OnSelectedStatusFilterChanged(JobCardStatusFilterOption value) => _ = LoadAsync();
 
     [RelayCommand]
     private async Task LogoutAsync()
@@ -44,7 +56,7 @@ public partial class JobCardListViewModel : ObservableObject
 
         try
         {
-            var cards = await _api.GetJobCardsAsync() ?? new List<JobCard>();
+            var cards = await _api.GetJobCardsAsync(SelectedStatusFilter.Status) ?? new List<JobCard>();
             JobCards.Clear();
             foreach (var card in cards) JobCards.Add(card);
         }
@@ -65,3 +77,5 @@ public partial class JobCardListViewModel : ObservableObject
     private Task OpenJobCardAsync(JobCard jobCard)
         => Shell.Current.GoToAsync($"jobcard-edit?id={jobCard.Id}");
 }
+
+public record JobCardStatusFilterOption(string Label, JobCardStatus? Status);

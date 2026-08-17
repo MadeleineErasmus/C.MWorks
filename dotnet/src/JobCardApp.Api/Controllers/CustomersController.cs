@@ -255,6 +255,62 @@ public class CustomersController : ControllerBase
         return CreatedAtAction(nameof(GetEmails), new { id }, created);
     }
 
+    /// <summary>
+    /// This customer's saved sites/premises (e.g. "Head office", "Warehouse")
+    /// so the job card screen can offer a quick pick that fills in the
+    /// free-text site address — purely a convenience, no history tracking.
+    /// </summary>
+    [HttpGet("{id:int}/sites")]
+    public async Task<ActionResult<List<CustomerSite>>> GetSites(int id)
+    {
+        if (!await _db.Customers.AnyAsync(c => c.Id == id))
+            return NotFound();
+
+        return await _db.CustomerSites
+            .Where(s => s.CustomerId == id)
+            .OrderBy(s => s.Name)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Find-or-create by Name only (case-insensitive, per customer) — same
+    /// reasoning as CreateItem: a name typed twice for the same customer
+    /// must resolve to the same site rather than duplicating it. If a site
+    /// with that name already exists, the existing record is returned as-is
+    /// rather than overwriting its address with a possibly-different typed
+    /// value.
+    /// </summary>
+    [HttpPost("{id:int}/sites")]
+    public async Task<ActionResult<CustomerSite>> CreateSite(int id, CustomerSite site)
+    {
+        if (!await _db.Customers.AnyAsync(c => c.Id == id))
+            return NotFound();
+
+        if (string.IsNullOrWhiteSpace(site.Name))
+            return BadRequest("Name is required.");
+        if (string.IsNullOrWhiteSpace(site.Address))
+            return BadRequest("Address is required.");
+
+        var name = site.Name.Trim();
+        var address = site.Address.Trim();
+
+        var existing = await _db.CustomerSites
+            .FirstOrDefaultAsync(s => s.CustomerId == id && s.Name.ToLower() == name.ToLower());
+        if (existing is not null)
+            return existing;
+
+        var created = new CustomerSite
+        {
+            CustomerId = id,
+            Name = name,
+            Address = address,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.CustomerSites.Add(created);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetSites), new { id }, created);
+    }
+
     private static bool IsPlausibleEmail(string address)
     {
         // Deliberately loose — just enough to catch obvious typos ("foo",

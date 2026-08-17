@@ -29,8 +29,19 @@
                     <Label Text="Description" Style="{StaticResource Caption}" />
                     <Editor Text="{Binding Description}" HeightRequest="80" />
 
+                    <Label Text="Site (optional)" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Sites}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedSite}" />
+
                     <Label Text="Site address" Style="{StaticResource Caption}" />
                     <Entry Text="{Binding SiteAddress}" />
+
+                    <Label Text="Not on the list? Name it and save it as a new site:" Style="{StaticResource Caption}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0" Text="{Binding NewSiteName}" Placeholder="Site name, e.g. Warehouse" />
+                        <Button Grid.Column="1" Text="Add" Command="{Binding AddSiteCommand}" />
+                    </Grid>
 
                     <Label Text="Technician" Style="{StaticResource Caption}" />
                     <Entry Text="{Binding Technician}" />

@@ -15,7 +15,20 @@ public partial class QuoteListViewModel : ObservableObject
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string? error;
 
-    public QuoteListViewModel(ApiClient api) => _api = api;
+    public IReadOnlyList<QuoteStatusFilterOption> StatusFilterOptions { get; } =
+        new QuoteStatusFilterOption[] { new("All statuses", null) }
+            .Concat(Enum.GetValues<QuoteStatus>().Select(s => new QuoteStatusFilterOption(s.ToString(), s)))
+            .ToList();
+
+    [ObservableProperty] private QuoteStatusFilterOption selectedStatusFilter;
+
+    public QuoteListViewModel(ApiClient api)
+    {
+        _api = api;
+        selectedStatusFilter = StatusFilterOptions[0];
+    }
+
+    partial void OnSelectedStatusFilterChanged(QuoteStatusFilterOption value) => _ = LoadAsync();
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -26,7 +39,7 @@ public partial class QuoteListViewModel : ObservableObject
 
         try
         {
-            var quotes = await _api.GetQuotesAsync() ?? new List<Quote>();
+            var quotes = await _api.GetQuotesAsync(SelectedStatusFilter.Status) ?? new List<Quote>();
             Quotes.Clear();
             foreach (var q in quotes) Quotes.Add(q);
         }
@@ -100,3 +113,5 @@ public partial class QuoteListViewModel : ObservableObject
         }
     }
 }
+
+public record QuoteStatusFilterOption(string Label, QuoteStatus? Status);

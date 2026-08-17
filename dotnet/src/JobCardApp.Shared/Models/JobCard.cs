@@ -25,6 +25,10 @@ public class JobCard
 
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+
+    /// <summary>Which of the customer's saved sites this job is at, if picked from the list — SiteAddress is the actual text shown/edited/saved and is only autofilled from this on selection, so the two can drift (e.g. a one-off tweak) without losing the link.</summary>
+    public int? SiteId { get; set; }
+    public CustomerSite? Site { get; set; }
     public string? SiteAddress { get; set; }
     public string? Technician { get; set; }
 

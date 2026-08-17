@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<CustomerItem> CustomerItems => Set<CustomerItem>();
     public DbSet<CustomerEmail> CustomerEmails => Set<CustomerEmail>();
+    public DbSet<CustomerSite> CustomerSites => Set<CustomerSite>();
     public DbSet<JobCard> JobCards => Set<JobCard>();
     public DbSet<JobCardLine> JobCardLines => Set<JobCardLine>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
@@ -53,6 +54,18 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        b.Entity<CustomerSite>(e =>
+        {
+            e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            e.Property(x => x.Address).IsRequired().HasMaxLength(500);
+            e.HasIndex(x => x.CustomerId);
+
+            e.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         b.Entity<JobCard>(e =>
         {
             e.Property(x => x.Reference).IsRequired().HasMaxLength(40);
@@ -69,6 +82,14 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Optional — a job card can reference one of the customer's saved
+            // sites, but if that site is ever removed the job card (and its
+            // already-copied SiteAddress text) must survive.
+            e.HasOne(x => x.Site)
+                .WithMany()
+                .HasForeignKey(x => x.SiteId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             e.HasMany(x => x.Lines)
                 .WithOne()

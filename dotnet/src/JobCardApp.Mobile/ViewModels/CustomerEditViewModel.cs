@@ -26,11 +26,14 @@ public partial class CustomerEditViewModel : ObservableObject
     [ObservableProperty] private string? selectedCategory;
     [ObservableProperty] private string newCategoryName = string.Empty;
     [ObservableProperty] private string newInvoiceEmail = string.Empty;
+    [ObservableProperty] private string newSiteName = string.Empty;
+    [ObservableProperty] private string newSiteAddress = string.Empty;
 
     public ObservableCollection<CustomerItem> Items { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<CustomerItemGroup> GroupedItems { get; } = new();
     public ObservableCollection<CustomerEmail> InvoiceEmails { get; } = new();
+    public ObservableCollection<CustomerSite> Sites { get; } = new();
 
     public bool CanDelete => CustomerId > 0;
 
@@ -66,6 +69,10 @@ public partial class CustomerEditViewModel : ObservableObject
             var emails = await _api.GetCustomerEmailsAsync(CustomerId) ?? new List<CustomerEmail>();
             InvoiceEmails.Clear();
             foreach (var email in emails) InvoiceEmails.Add(email);
+
+            var sites = await _api.GetCustomerSitesAsync(CustomerId) ?? new List<CustomerSite>();
+            Sites.Clear();
+            foreach (var site in sites) Sites.Add(site);
         }
         catch (Exception ex)
         {
@@ -198,6 +205,54 @@ public partial class CustomerEditViewModel : ObservableObject
         catch (Exception ex)
         {
             await Shell.Current.DisplayAlert("Could not remove email", ex.Message, "OK");
+        }
+    }
+
+    /// <summary>
+    /// This customer's saved sites/premises (e.g. "Head office", "Warehouse")
+    /// — find-or-create server side by Name, so the job card screen can pick
+    /// one to autofill its free-text site address without duplicating rows.
+    /// </summary>
+    [RelayCommand]
+    private async Task AddSiteAsync()
+    {
+        if (CustomerId <= 0)
+        {
+            await Shell.Current.DisplayAlert("Save the customer first", "Sites can be added once the customer has been saved.", "OK");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(NewSiteName) || string.IsNullOrWhiteSpace(NewSiteAddress)) return;
+
+        try
+        {
+            var site = await _api.AddCustomerSiteAsync(CustomerId, NewSiteName.Trim(), NewSiteAddress.Trim());
+            if (site is not null && Sites.All(s => s.Id != site.Id))
+                Sites.Add(site);
+            NewSiteName = string.Empty;
+            NewSiteAddress = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not add site", ex.Message, "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveSiteAsync(CustomerSite site)
+    {
+        var confirmed = await Shell.Current.DisplayAlert(
+            "Remove site", $"Remove {site.Name} from this customer's sites?", "Remove", "Cancel");
+        if (!confirmed) return;
+
+        try
+        {
+            await _api.DeleteCustomerSiteAsync(site.Id);
+            var existing = Sites.FirstOrDefault(s => s.Id == site.Id);
+            if (existing is not null) Sites.Remove(existing);
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not remove site", ex.Message, "OK");
         }
     }
 

@@ -8,14 +8,19 @@
              BackgroundColor="{StaticResource Surface}"
              Title="Quotes">
 
-    <Grid RowDefinitions="Auto,*" Padding="12" RowSpacing="10">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12" RowSpacing="10">
 
-        <Label Grid.Row="0"
+        <Picker Grid.Row="0"
+                ItemsSource="{Binding StatusFilterOptions}"
+                ItemDisplayBinding="{Binding Label}"
+                SelectedItem="{Binding SelectedStatusFilter}" />
+
+        <Label Grid.Row="1"
                Text="{Binding Error}"
                TextColor="#B00020"
                IsVisible="{Binding Error, Converter={x:Static vm:NotNullConverter.Instance}}" />
 
-        <RefreshView Grid.Row="1"
+        <RefreshView Grid.Row="2"
                      IsRefreshing="{Binding IsBusy}"
                      Command="{Binding LoadCommand}">
             <CollectionView ItemsSource="{Binding Quotes}">

@@ -154,9 +154,31 @@ public class ApiClient
             throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
     }
 
+    // Customer sites
+    public Task<List<CustomerSite>?> GetCustomerSitesAsync(int customerId)
+        => _http.GetFromJsonAsync<List<CustomerSite>>($"api/customers/{customerId}/sites", JsonOptions);
+
+    public async Task<CustomerSite?> AddCustomerSiteAsync(int customerId, string name, string address)
+    {
+        var response = await _http.PostAsJsonAsync($"api/customers/{customerId}/sites", new CustomerSite { Name = name, Address = address });
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<CustomerSite>(JsonOptions);
+    }
+
+    public async Task DeleteCustomerSiteAsync(int siteId)
+    {
+        var response = await _http.DeleteAsync($"api/customer-sites/{siteId}");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
     // Job cards
-    public Task<List<JobCard>?> GetJobCardsAsync()
-        => _http.GetFromJsonAsync<List<JobCard>>("api/jobcards", JsonOptions);
+    public Task<List<JobCard>?> GetJobCardsAsync(JobCardStatus? status = null)
+    {
+        var url = status.HasValue ? $"api/jobcards?status={status}" : "api/jobcards";
+        return _http.GetFromJsonAsync<List<JobCard>>(url, JsonOptions);
+    }
 
     public Task<JobCard?> GetJobCardAsync(int id)
         => _http.GetFromJsonAsync<JobCard>($"api/jobcards/{id}", JsonOptions);
@@ -193,8 +215,11 @@ public class ApiClient
     }
 
     // Invoices
-    public Task<List<Invoice>?> GetInvoicesAsync()
-        => _http.GetFromJsonAsync<List<Invoice>>("api/invoices", JsonOptions);
+    public Task<List<Invoice>?> GetInvoicesAsync(InvoiceStatus? status = null)
+    {
+        var url = status.HasValue ? $"api/invoices?status={status}" : "api/invoices";
+        return _http.GetFromJsonAsync<List<Invoice>>(url, JsonOptions);
+    }
 
     public Task<Invoice?> GetInvoiceAsync(int id)
         => _http.GetFromJsonAsync<Invoice>($"api/invoices/{id}", JsonOptions);
@@ -241,8 +266,11 @@ public class ApiClient
     }
 
     // Quotes
-    public Task<List<Quote>?> GetQuotesAsync()
-        => _http.GetFromJsonAsync<List<Quote>>("api/quotes", JsonOptions);
+    public Task<List<Quote>?> GetQuotesAsync(QuoteStatus? status = null)
+    {
+        var url = status.HasValue ? $"api/quotes?status={status}" : "api/quotes";
+        return _http.GetFromJsonAsync<List<Quote>>(url, JsonOptions);
+    }
 
     public Task<Quote?> GetQuoteAsync(int id)
         => _http.GetFromJsonAsync<Quote>($"api/quotes/{id}", JsonOptions);
