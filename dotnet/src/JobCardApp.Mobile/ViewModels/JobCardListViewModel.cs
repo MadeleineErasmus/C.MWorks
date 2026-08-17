@@ -9,13 +9,31 @@ namespace JobCardApp.Mobile.ViewModels;
 public partial class JobCardListViewModel : ObservableObject
 {
     private readonly ApiClient _api;
+    private readonly AuthState _authState;
 
     public ObservableCollection<JobCard> JobCards { get; } = new();
 
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string? error;
 
-    public JobCardListViewModel(ApiClient api) => _api = api;
+    public string? SignedInAs => _authState.DisplayName is null
+        ? null
+        : $"{_authState.DisplayName} ({_authState.Role})";
+
+    public JobCardListViewModel(ApiClient api, AuthState authState)
+    {
+        _api = api;
+        _authState = authState;
+    }
+
+    [RelayCommand]
+    private async Task LogoutAsync()
+    {
+        _authState.Clear();
+        _api.AttachToken(null);
+        TokenStore.Clear();
+        await Shell.Current.GoToAsync("//login");
+    }
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -46,20 +64,4 @@ public partial class JobCardListViewModel : ObservableObject
     [RelayCommand]
     private Task OpenJobCardAsync(JobCard jobCard)
         => Shell.Current.GoToAsync($"jobcard-edit?id={jobCard.Id}");
-
-    [RelayCommand]
-    private async Task InvoiceAsync(JobCard jobCard)
-    {
-        try
-        {
-            var invoice = await _api.CreateInvoiceFromJobCardAsync(jobCard.Id);
-            await Shell.Current.DisplayAlert("Invoice created",
-                $"{invoice?.Number} — total {invoice?.Total:C}", "OK");
-            await LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlert("Could not invoice", ex.Message, "OK");
-        }
-    }
 }

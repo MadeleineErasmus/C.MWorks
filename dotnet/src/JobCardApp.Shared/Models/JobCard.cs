@@ -19,6 +19,10 @@ public class JobCard
     public int CustomerId { get; set; }
     public Customer? Customer { get; set; }
 
+    /// <summary>Which business entity is doing this job — carries through to the invoice generated from it.</summary>
+    public int? CompanyId { get; set; }
+    public Company? Company { get; set; }
+
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? SiteAddress { get; set; }
@@ -40,7 +44,8 @@ public enum LineKind
     Labour = 0,
     Part = 1,
     Travel = 2,
-    Other = 3
+    Other = 3,
+    CallOut = 4
 }
 
 public class JobCardLine

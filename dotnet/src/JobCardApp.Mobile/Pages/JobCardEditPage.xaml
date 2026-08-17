@@ -18,6 +18,11 @@
                             ItemDisplayBinding="{Binding Name}"
                             SelectedItem="{Binding SelectedCustomer}" />
 
+                    <Label Text="Billing company" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Companies}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCompany}" />
+
                     <Label Text="Title" Style="{StaticResource Caption}" />
                     <Entry Text="{Binding Title}" Placeholder="e.g. Compressor service" />
 
@@ -31,13 +36,39 @@
                     <Entry Text="{Binding Technician}" />
 
                     <Label Text="Status" Style="{StaticResource Caption}" />
-                    <Picker ItemsSource="{Binding Statuses}" SelectedItem="{Binding Status}" />
+                    <Label Text="{Binding Status}" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}"
+                    IsVisible="{Binding HasJobCard}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Job card actions" FontAttributes="Bold" />
+                    <Button Text="Mark complete"
+                            Command="{Binding CompleteCommand}"
+                            IsVisible="{Binding CanComplete}" />
+                    <Button Text="Create invoice"
+                            Command="{Binding InvoiceCommand}"
+                            IsVisible="{Binding CanInvoice}" />
+                    <Button Text="Create quote"
+                            Command="{Binding CreateQuoteCommand}"
+                            IsVisible="{Binding CanCreateQuote}"
+                            BackgroundColor="{StaticResource BrandDark}" />
+                    <Button Text="Cancel job card"
+                            Command="{Binding CancelJobCardCommand}"
+                            IsVisible="{Binding CanCancel}"
+                            BackgroundColor="#B00020" />
                 </VerticalStackLayout>
             </Border>
 
             <Border Style="{StaticResource CardFrame}">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Line items" FontAttributes="Bold" />
+
+                    <HorizontalStackLayout Spacing="8">
+                        <CheckBox IsChecked="{Binding IncludeCallOutFee}" />
+                        <Label Text="Call-out fee" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
 
                     <CollectionView ItemsSource="{Binding Lines}">
                         <CollectionView.ItemTemplate>
@@ -83,6 +114,52 @@
                         <Entry Grid.Column="0" Text="{Binding NewLineQuantity}" Keyboard="Numeric" Placeholder="Qty" />
                         <Entry Grid.Column="1" Text="{Binding NewLineUnitPrice}" Keyboard="Numeric" Placeholder="Unit price" />
                     </Grid>
+
+                    <Button Text="Check previous pricing for this customer"
+                            FontSize="13"
+                            HeightRequest="38"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource Brand}"
+                            Command="{Binding CheckPricingHistoryCommand}" />
+
+                    <VerticalStackLayout IsVisible="{Binding IsPricingHistoryVisible}" Spacing="6">
+                        <ActivityIndicator IsRunning="{Binding IsPricingHistoryBusy}"
+                                            IsVisible="{Binding IsPricingHistoryBusy}" />
+                        <CollectionView ItemsSource="{Binding PricingHistory}" HeightRequest="160">
+                            <CollectionView.EmptyView>
+                                <Label Text="No previous pricing found for this customer."
+                                       Style="{StaticResource Caption}" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:PricingHistoryEntry">
+                                    <Grid ColumnDefinitions="*,Auto" Padding="0,4">
+                                        <VerticalStackLayout Grid.Column="0">
+                                            <Label Text="{Binding Description}" FontSize="13" />
+                                            <Label Style="{StaticResource Caption}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding InvoiceNumber}" />
+                                                        <Span Text=" · " />
+                                                        <Span Text="{Binding InvoiceDate, StringFormat='{0:d}'}" />
+                                                        <Span Text=" · qty " />
+                                                        <Span Text="{Binding Quantity}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="1"
+                                                Text="{Binding UnitPrice, StringFormat='Use {0:C}'}"
+                                                FontSize="12"
+                                                HeightRequest="34"
+                                                Padding="8,0"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=UsePricingHistoryEntryCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+
                     <Button Text="Add line" Command="{Binding AddLineCommand}" />
 
                     <Label Text="{Binding Subtotal, StringFormat='Subtotal: {0:C}'}"

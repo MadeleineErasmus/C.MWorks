@@ -25,14 +25,33 @@ public static class MauiProgram
 
         builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<ApiClient>();
+        builder.Services.AddSingleton<AuthState>();
 
         builder.Services.AddSingleton<JobCardListViewModel>();
         builder.Services.AddSingleton<InvoiceListViewModel>();
+        builder.Services.AddSingleton<CustomerListViewModel>();
+        builder.Services.AddSingleton<CompanyListViewModel>();
+        builder.Services.AddSingleton<QuoteListViewModel>();
+        builder.Services.AddSingleton<PaymentListViewModel>();
         builder.Services.AddTransient<JobCardEditViewModel>();
+        builder.Services.AddTransient<CustomerEditViewModel>();
+        builder.Services.AddTransient<CompanyEditViewModel>();
+        builder.Services.AddTransient<PaymentEditViewModel>();
+        builder.Services.AddTransient<StatementViewModel>();
+        builder.Services.AddTransient<LoginViewModel>();
 
         builder.Services.AddSingleton<JobCardListPage>();
         builder.Services.AddSingleton<InvoiceListPage>();
+        builder.Services.AddSingleton<CustomerListPage>();
+        builder.Services.AddSingleton<CompanyListPage>();
+        builder.Services.AddSingleton<QuoteListPage>();
+        builder.Services.AddSingleton<PaymentListPage>();
         builder.Services.AddTransient<JobCardEditPage>();
+        builder.Services.AddTransient<CustomerEditPage>();
+        builder.Services.AddTransient<CompanyEditPage>();
+        builder.Services.AddTransient<PaymentEditPage>();
+        builder.Services.AddTransient<StatementPage>();
+        builder.Services.AddTransient<LoginPage>();
 
         return builder.Build();
     }

@@ -3,7 +3,6 @@
   <!-- usesCleartextTraffic allows http:// to your local API during development.
        Remove it once the API is behind HTTPS. -->
   <application android:allowBackup="true"
-               android:icon="@mipmap/appicon"
                android:supportsRtl="true"
                android:usesCleartextTraffic="true" />
   <uses-permission android:name="android.permission.INTERNET" />

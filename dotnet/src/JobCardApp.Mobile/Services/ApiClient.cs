@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using JobCardApp.Shared.Models;
@@ -20,15 +21,100 @@ public class ApiClient
         _http.Timeout = TimeSpan.FromSeconds(20);
     }
 
+    /// <summary>Attaches (or clears, if null) the bearer token used for every subsequent request.</summary>
+    public void AttachToken(string? token)
+        => _http.DefaultRequestHeaders.Authorization =
+            token is null ? null : new AuthenticationHeaderValue("Bearer", token);
+
+    // Auth
+    public async Task<AuthResponse?> LoginAsync(string username, string password, bool rememberMe)
+    {
+        var response = await _http.PostAsJsonAsync("api/auth/login",
+            new LoginRequest { Username = username, Password = password, RememberMe = rememberMe });
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions);
+    }
+
+    // Settings
+    public Task<BillingSettings?> GetBillingSettingsAsync()
+        => _http.GetFromJsonAsync<BillingSettings>("api/settings/billing", JsonOptions);
+
+    // Companies
+    public Task<List<Company>?> GetCompaniesAsync()
+        => _http.GetFromJsonAsync<List<Company>>("api/companies", JsonOptions);
+
+    public Task<Company?> GetCompanyAsync(int id)
+        => _http.GetFromJsonAsync<Company>($"api/companies/{id}", JsonOptions);
+
+    public async Task<Company?> CreateCompanyAsync(Company company)
+    {
+        var response = await _http.PostAsJsonAsync("api/companies", company);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Company>(JsonOptions);
+    }
+
+    public async Task UpdateCompanyAsync(Company company)
+    {
+        var response = await _http.PutAsJsonAsync($"api/companies/{company.Id}", company);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
+    public async Task DeleteCompanyAsync(int id)
+    {
+        var response = await _http.DeleteAsync($"api/companies/{id}");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
     // Customers
-    public Task<List<Customer>?> GetCustomersAsync()
-        => _http.GetFromJsonAsync<List<Customer>>("api/customers", JsonOptions);
+    public Task<List<Customer>?> GetCustomersAsync(string? search = null)
+    {
+        var url = string.IsNullOrWhiteSpace(search)
+            ? "api/customers"
+            : $"api/customers?search={Uri.EscapeDataString(search)}";
+        return _http.GetFromJsonAsync<List<Customer>>(url, JsonOptions);
+    }
+
+    public Task<Customer?> GetCustomerAsync(int id)
+        => _http.GetFromJsonAsync<Customer>($"api/customers/{id}", JsonOptions);
 
     public async Task<Customer?> CreateCustomerAsync(Customer customer)
     {
         var response = await _http.PostAsJsonAsync("api/customers", customer);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Customer>(JsonOptions);
+    }
+
+    public async Task UpdateCustomerAsync(Customer customer)
+    {
+        var response = await _http.PutAsJsonAsync($"api/customers/{customer.Id}", customer);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteCustomerAsync(int id)
+    {
+        var response = await _http.DeleteAsync($"api/customers/{id}");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
+    public Task<List<PricingHistoryEntry>?> GetPricingHistoryAsync(int customerId, string? search = null)
+    {
+        var url = string.IsNullOrWhiteSpace(search)
+            ? $"api/customers/{customerId}/pricing-history"
+            : $"api/customers/{customerId}/pricing-history?search={Uri.EscapeDataString(search)}";
+        return _http.GetFromJsonAsync<List<PricingHistoryEntry>>(url, JsonOptions);
+    }
+
+    public Task<CustomerStatement?> GetCustomerStatementAsync(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+    {
+        var query = new List<string>();
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        var url = $"api/customers/{customerId}/statement" + (query.Count > 0 ? $"?{string.Join("&", query)}" : "");
+        return _http.GetFromJsonAsync<CustomerStatement>(url, JsonOptions);
     }
 
     // Job cards
@@ -51,6 +137,24 @@ public class ApiClient
         response.EnsureSuccessStatusCode();
     }
 
+    // Status is server-owned — these are the only ways to move a job card
+    // between statuses; a plain update no longer accepts a Status change.
+    public async Task<JobCard?> CompleteJobCardAsync(int id)
+    {
+        var response = await _http.PostAsync($"api/jobcards/{id}/complete", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<JobCard>(JsonOptions);
+    }
+
+    public async Task<JobCard?> CancelJobCardAsync(int id)
+    {
+        var response = await _http.PostAsync($"api/jobcards/{id}/cancel", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<JobCard>(JsonOptions);
+    }
+
     // Invoices
     public Task<List<Invoice>?> GetInvoicesAsync()
         => _http.GetFromJsonAsync<List<Invoice>>("api/invoices", JsonOptions);
@@ -68,5 +172,69 @@ public class ApiClient
     {
         var response = await _http.PostAsync($"api/invoices/{invoiceId}/status/{status}", null);
         response.EnsureSuccessStatusCode();
+    }
+
+    // Quotes
+    public Task<List<Quote>?> GetQuotesAsync()
+        => _http.GetFromJsonAsync<List<Quote>>("api/quotes", JsonOptions);
+
+    public async Task<Quote?> CreateQuoteFromJobCardAsync(int jobCardId)
+    {
+        var response = await _http.PostAsync($"api/quotes/from-jobcard/{jobCardId}", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Quote>(JsonOptions);
+    }
+
+    public async Task SetQuoteStatusAsync(int quoteId, QuoteStatus status)
+    {
+        var response = await _http.PostAsync($"api/quotes/{quoteId}/status/{status}", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
+    public async Task<Invoice?> ConvertQuoteToInvoiceAsync(int quoteId)
+    {
+        var response = await _http.PostAsync($"api/quotes/{quoteId}/convert-to-invoice", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Invoice>(JsonOptions);
+    }
+
+    public async Task DeleteQuoteAsync(int id)
+    {
+        var response = await _http.DeleteAsync($"api/quotes/{id}");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
+    // Payments
+    public Task<List<Payment>?> GetPaymentsAsync()
+        => _http.GetFromJsonAsync<List<Payment>>("api/payments", JsonOptions);
+
+    public Task<Payment?> GetPaymentAsync(int id)
+        => _http.GetFromJsonAsync<Payment>($"api/payments/{id}", JsonOptions);
+
+    public async Task<Payment?> CreatePaymentAsync(Payment payment)
+    {
+        var response = await _http.PostAsJsonAsync("api/payments", payment);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<Payment>(JsonOptions);
+    }
+
+    public async Task AllocatePaymentAsync(int paymentId, int invoiceId, decimal amount)
+    {
+        var response = await _http.PostAsJsonAsync($"api/payments/{paymentId}/allocations",
+            new CreateAllocationRequest { InvoiceId = invoiceId, AllocatedAmount = amount });
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
+    public async Task ReverseAllocationAsync(int allocationId)
+    {
+        var response = await _http.PostAsync($"api/payments/allocations/{allocationId}/reverse", null);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
     }
 }

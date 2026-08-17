@@ -1,6 +1,7 @@
 using JobCardApp.Api.Data;
 using JobCardApp.Shared;
 using JobCardApp.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace JobCardApp.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class JobCardsController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -18,6 +20,7 @@ public class JobCardsController : ControllerBase
     {
         var query = _db.JobCards
             .Include(j => j.Customer)
+            .Include(j => j.Company)
             .Include(j => j.Lines)
             .AsQueryable();
 
@@ -32,6 +35,7 @@ public class JobCardsController : ControllerBase
     {
         var jobCard = await _db.JobCards
             .Include(j => j.Customer)
+            .Include(j => j.Company)
             .Include(j => j.Lines)
             .FirstOrDefaultAsync(j => j.Id == id);
 
@@ -43,7 +47,13 @@ public class JobCardsController : ControllerBase
     {
         jobCard.Id = 0;
         jobCard.Customer = null;
+        jobCard.Company = null;
         jobCard.CreatedAt = DateTime.UtcNow;
+
+        // Status is server-owned from creation onward — see /complete, /cancel,
+        // and POST /api/Invoices/from-jobcard/{id} for the only valid transitions.
+        jobCard.Status = JobCardStatus.Open;
+        jobCard.CompletedAt = null;
 
         if (string.IsNullOrWhiteSpace(jobCard.Reference))
             jobCard.Reference = InvoiceFactory.NextReference("JC", await NextSequenceAsync());
@@ -64,15 +74,17 @@ public class JobCardsController : ControllerBase
         if (existing is null) return NotFound();
 
         existing.CustomerId = jobCard.CustomerId;
+        existing.CompanyId = jobCard.CompanyId;
         existing.Title = jobCard.Title;
         existing.Description = jobCard.Description;
         existing.SiteAddress = jobCard.SiteAddress;
         existing.Technician = jobCard.Technician;
         existing.ScheduledFor = jobCard.ScheduledFor;
-        existing.Status = jobCard.Status;
-        existing.CompletedAt = jobCard.Status == JobCardStatus.Completed
-            ? existing.CompletedAt ?? DateTime.UtcNow
-            : jobCard.CompletedAt;
+
+        // Status/CompletedAt are intentionally NOT settable here — the client
+        // cannot move a job card into an arbitrary status via a plain edit.
+        // Use POST {id}/complete, POST {id}/cancel, or the invoice-creation
+        // endpoint, which validate the transition server-side.
 
         // Simple replace-all strategy — fine for a base, swap for a diff later.
         _db.JobCardLines.RemoveRange(existing.Lines);
@@ -88,7 +100,41 @@ public class JobCardsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:int}/complete")]
+    [Authorize(Roles = $"{nameof(UserRole.Technician)},{nameof(UserRole.Office)},{nameof(UserRole.Manager)},{nameof(UserRole.Administrator)}")]
+    public async Task<ActionResult<JobCard>> Complete(int id)
+    {
+        var jobCard = await _db.JobCards.FindAsync(id);
+        if (jobCard is null) return NotFound();
+
+        if (jobCard.Status is JobCardStatus.Invoiced or JobCardStatus.Cancelled)
+            return Conflict($"Job card is {jobCard.Status} and can no longer be completed.");
+
+        jobCard.Status = JobCardStatus.Completed;
+        jobCard.CompletedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return jobCard;
+    }
+
+    [HttpPost("{id:int}/cancel")]
+    [Authorize(Roles = $"{nameof(UserRole.Office)},{nameof(UserRole.Manager)},{nameof(UserRole.Administrator)}")]
+    public async Task<ActionResult<JobCard>> Cancel(int id)
+    {
+        var jobCard = await _db.JobCards.FindAsync(id);
+        if (jobCard is null) return NotFound();
+
+        if (jobCard.Status == JobCardStatus.Invoiced)
+            return Conflict("An invoiced job card cannot be cancelled — reverse the invoice instead.");
+        if (jobCard.Status == JobCardStatus.Cancelled)
+            return Conflict("Job card is already cancelled.");
+
+        jobCard.Status = JobCardStatus.Cancelled;
+        await _db.SaveChangesAsync();
+        return jobCard;
+    }
+
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Office)},{nameof(UserRole.Manager)}")]
     public async Task<IActionResult> Delete(int id)
     {
         var existing = await _db.JobCards.FindAsync(id);

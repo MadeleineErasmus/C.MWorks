@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.CustomerListPage"
+             x:DataType="vm:CustomerListViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Customers">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="12" RowSpacing="10">
+
+        <SearchBar Grid.Row="0"
+                   Placeholder="Search name, email, phone, VAT number"
+                   Text="{Binding SearchText}"
+                   SearchCommand="{Binding LoadCommand}" />
+
+        <Label Grid.Row="1"
+               Text="{Binding Error}"
+               TextColor="#B00020"
+               IsVisible="{Binding Error, Converter={x:Static vm:NotNullConverter.Instance}}" />
+
+        <RefreshView Grid.Row="2"
+                     IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Customers}">
+                <CollectionView.EmptyView>
+                    <Label Text="No customers found. Tap + New customer."
+                           HorizontalOptions="Center"
+                           Margin="0,40"
+                           Style="{StaticResource Caption}" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Customer">
+                        <Border Style="{StaticResource CardFrame}" Margin="0,0,0,10">
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+                                <Label Grid.Row="0"
+                                       Text="{Binding Name}"
+                                       FontAttributes="Bold"
+                                       FontSize="16" />
+                                <Label Grid.Row="1" Style="{StaticResource Caption}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding ContactPerson}" />
+                                            <Span Text=" · " />
+                                            <Span Text="{Binding Phone}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerListViewModel}}, Path=OpenCustomerCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <Button Grid.Row="3"
+                Text="+ New customer"
+                Command="{Binding NewCustomerCommand}" />
+    </Grid>
+</ContentPage>

@@ -1,6 +1,7 @@
 using JobCardApp.Api.Data;
 using JobCardApp.Shared;
 using JobCardApp.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace JobCardApp.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class InvoicesController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -24,7 +26,9 @@ public class InvoicesController : ControllerBase
     {
         var query = _db.Invoices
             .Include(i => i.Customer)
+            .Include(i => i.Company)
             .Include(i => i.Lines)
+            .Include(i => i.Allocations)
             .AsQueryable();
 
         if (status.HasValue)
@@ -38,7 +42,9 @@ public class InvoicesController : ControllerBase
     {
         var invoice = await _db.Invoices
             .Include(i => i.Customer)
+            .Include(i => i.Company)
             .Include(i => i.Lines)
+            .Include(i => i.Allocations)
             .FirstOrDefaultAsync(i => i.Id == id);
 
         return invoice is null ? NotFound() : invoice;
@@ -49,8 +55,12 @@ public class InvoicesController : ControllerBase
     {
         var jobCard = await _db.JobCards
             .Include(j => j.Lines)
+            .Include(j => j.Company)
             .FirstOrDefaultAsync(j => j.Id == jobCardId);
         if (jobCard is null) return NotFound();
+
+        if (jobCard.Status != JobCardStatus.Completed)
+            return BadRequest("Job card must be completed (POST /api/JobCards/{id}/complete) before it can be invoiced.");
 
         if (jobCard.Lines.Count == 0)
             return BadRequest("Job card has no line items to invoice.");
@@ -77,6 +87,7 @@ public class InvoicesController : ControllerBase
         invoice.Id = 0;
         invoice.Customer = null;
         invoice.JobCard = null;
+        invoice.Company = null;
         foreach (var line in invoice.Lines) line.Id = 0;
 
         if (string.IsNullOrWhiteSpace(invoice.Number))
@@ -87,14 +98,25 @@ public class InvoicesController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = invoice.Id }, invoice);
     }
 
+    /// <summary>
+    /// Ordinary status transitions (Sent, Overdue, Cancelled, back to Draft).
+    /// Paid/PartiallyPaid are NOT settable here — they're computed from real
+    /// payment allocations (see PaymentsController) per §14: "An invoice
+    /// should become Paid only when the allocated payment amount covers the
+    /// invoice balance."
+    /// </summary>
     [HttpPost("{id:int}/status/{status}")]
+    [Authorize(Roles = $"{nameof(UserRole.Administrator)},{nameof(UserRole.Accounts)},{nameof(UserRole.Manager)}")]
     public async Task<IActionResult> SetStatus(int id, InvoiceStatus status)
     {
+        if (status is InvoiceStatus.Paid or InvoiceStatus.PartiallyPaid)
+            return BadRequest("Paid/PartiallyPaid are computed from payment allocations — use the Payments endpoints instead.");
+
         var invoice = await _db.Invoices.FindAsync(id);
         if (invoice is null) return NotFound();
 
         invoice.Status = status;
-        invoice.PaidOn = status == InvoiceStatus.Paid ? DateTime.UtcNow : null;
+        invoice.PaidOn = null;
         await _db.SaveChangesAsync();
         return NoContent();
     }

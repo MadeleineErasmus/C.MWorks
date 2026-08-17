@@ -8,14 +8,23 @@
              BackgroundColor="{StaticResource Surface}"
              Title="Job cards">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="12" RowSpacing="10">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="12" RowSpacing="10">
 
         <Label Grid.Row="0"
+               Text="{Binding SignedInAs}"
+               Style="{StaticResource Caption}"
+               IsVisible="{Binding SignedInAs, Converter={x:Static vm:NotNullConverter.Instance}}" />
+
+        <Label Grid.Row="1"
                Text="{Binding Error}"
                TextColor="#B00020"
                IsVisible="{Binding Error, Converter={x:Static vm:NotNullConverter.Instance}}" />
 
-        <RefreshView Grid.Row="1"
+        <RefreshView Grid.Row="2"
                      IsRefreshing="{Binding IsBusy}"
                      Command="{Binding LoadCommand}">
             <CollectionView ItemsSource="{Binding JobCards}">
@@ -53,21 +62,13 @@
                                         CommandParameter="{Binding .}" />
                                 </Grid.GestureRecognizers>
                             </Grid>
-
-                            <Border.ContextFlyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem Text="Create invoice"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardListViewModel}}, Path=InvoiceCommand}"
-                                        CommandParameter="{Binding .}" />
-                                </MenuFlyout>
-                            </Border.ContextFlyout>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
 
-        <Button Grid.Row="2"
+        <Button Grid.Row="3"
                 Text="+ New job card"
                 Command="{Binding NewJobCardCommand}" />
     </Grid>

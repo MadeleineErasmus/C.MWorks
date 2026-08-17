@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.CompanyEditPage"
+             x:DataType="vm:CompanyEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Company">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Company name" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Name}" Placeholder="e.g. Acme Services (Pty) Ltd" />
+
+                    <Label Text="Address" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Address}" HeightRequest="80" />
+
+                    <Label Text="Phone" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Phone}" Keyboard="Telephone" />
+
+                    <Label Text="Email" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Email}" Keyboard="Email" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="VAT" FontAttributes="Bold" />
+
+                    <HorizontalStackLayout Spacing="8">
+                        <CheckBox IsChecked="{Binding IsVatRegistered}" />
+                        <Label Text="VAT registered" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <Label Text="VAT number" Style="{StaticResource Caption}" IsVisible="{Binding IsVatRegistered}" />
+                    <Entry Text="{Binding VatNumber}" IsVisible="{Binding IsVatRegistered}" />
+
+                    <Label Text="VAT rate (%)" Style="{StaticResource Caption}" IsVisible="{Binding IsVatRegistered}" />
+                    <Entry Text="{Binding TaxRatePercent}" Keyboard="Numeric" IsVisible="{Binding IsVatRegistered}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Banking details" FontAttributes="Bold" />
+
+                    <Label Text="Bank name" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding BankName}" />
+
+                    <Label Text="Account holder" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding AccountHolder}" />
+
+                    <Label Text="Account number" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding AccountNumber}" />
+
+                    <Label Text="Branch code" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding BranchCode}" />
+
+                    <Label Text="Account type" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding AccountType}" Placeholder="e.g. Cheque, Savings" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Save company" Command="{Binding SaveCommand}" />
+
+            <Button Text="Delete company"
+                    Command="{Binding DeleteCommand}"
+                    IsVisible="{Binding CanDelete}"
+                    BackgroundColor="#B00020" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

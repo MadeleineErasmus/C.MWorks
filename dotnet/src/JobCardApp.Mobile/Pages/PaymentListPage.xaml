@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.PaymentListPage"
+             x:DataType="vm:PaymentListViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Payments">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="12" RowSpacing="10">
+
+        <Label Grid.Row="0"
+               Text="{Binding Error}"
+               TextColor="#B00020"
+               IsVisible="{Binding Error, Converter={x:Static vm:NotNullConverter.Instance}}" />
+
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Payments}">
+                <CollectionView.EmptyView>
+                    <Label Text="No payments yet. Tap + New payment."
+                           HorizontalOptions="Center"
+                           Margin="0,40"
+                           Style="{StaticResource Caption}" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Payment">
+                        <Border Style="{StaticResource CardFrame}" Margin="0,0,0,10">
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding Customer.Name}"
+                                       FontAttributes="Bold" />
+                                <Label Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding PaymentDate, StringFormat='{0:d}'}"
+                                       Style="{StaticResource Caption}" />
+
+                                <Label Grid.Row="1" Grid.Column="0" Style="{StaticResource Caption}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding PaymentMethod}" />
+                                            <Span Text=" · " />
+                                            <Span Text="{Binding Reference}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                                <Label Grid.Row="1" Grid.Column="1" Style="{StaticResource Caption}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding Amount, StringFormat='{0:C}'}" />
+                                            <Span Text=" (unalloc " />
+                                            <Span Text="{Binding UnallocatedAmount, StringFormat='{0:C}'}" />
+                                            <Span Text=")" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PaymentListViewModel}}, Path=OpenPaymentCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <Button Grid.Row="2"
+                Text="+ New payment"
+                Command="{Binding NewPaymentCommand}" />
+    </Grid>
+</ContentPage>

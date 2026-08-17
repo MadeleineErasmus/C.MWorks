@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.CustomerEditPage"
+             x:DataType="vm:CustomerEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Customer">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Company name" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Name}" Placeholder="e.g. Acme Manufacturing" />
+
+                    <Label Text="Contact person" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding ContactPerson}" />
+
+                    <Label Text="Email" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Email}" Keyboard="Email" />
+
+                    <Label Text="Phone" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Phone}" Keyboard="Telephone" />
+
+                    <Label Text="Address" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Address}" HeightRequest="80" />
+
+                    <Label Text="VAT number" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding VatNumber}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Save customer" Command="{Binding SaveCommand}" />
+
+            <Button Text="View statement"
+                    Command="{Binding ViewStatementCommand}"
+                    IsVisible="{Binding CanDelete}"
+                    BackgroundColor="{StaticResource BrandDark}" />
+
+            <Button Text="Delete customer"
+                    Command="{Binding DeleteCommand}"
+                    IsVisible="{Binding CanDelete}"
+                    BackgroundColor="#B00020" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

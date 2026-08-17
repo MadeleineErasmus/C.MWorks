@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.PaymentEditPage"
+             x:DataType="vm:PaymentEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Payment">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <!-- New payment form -->
+            <Border Style="{StaticResource CardFrame}" IsVisible="{Binding IsNew}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Customer" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Customers}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCustomer}" />
+
+                    <Label Text="Amount" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Amount}" Keyboard="Numeric" />
+
+                    <Label Text="Payment method" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding PaymentMethod}" Placeholder="e.g. EFT, Cash, Card" />
+
+                    <Label Text="Reference" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Reference}" />
+
+                    <Label Text="Notes" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Notes}" HeightRequest="70" />
+
+                    <Button Text="Save payment" Command="{Binding SaveCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Existing payment summary + allocation -->
+            <Border Style="{StaticResource CardFrame}" IsVisible="{Binding IsExisting}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="{Binding SelectedCustomer.Name}" FontAttributes="Bold" FontSize="16" />
+                    <Label Style="{StaticResource Caption}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding PaymentMethod}" />
+                                <Span Text=" · " />
+                                <Span Text="{Binding Reference}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                    <Label Style="{StaticResource Caption}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Amount " />
+                                <Span Text="{Binding Amount}" />
+                                <Span Text=" · Unallocated " />
+                                <Span Text="{Binding UnallocatedAmount, StringFormat='{0:C}'}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}" IsVisible="{Binding IsExisting}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Allocate to invoice" FontAttributes="Bold" />
+
+                    <Picker ItemsSource="{Binding OutstandingInvoices}"
+                            ItemDisplayBinding="{Binding Number}"
+                            SelectedItem="{Binding SelectedInvoiceToAllocate}" />
+                    <Label Text="{Binding SelectedInvoiceToAllocate.OutstandingAmount, StringFormat='Outstanding: {0:C}'}"
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding SelectedInvoiceToAllocate, Converter={x:Static vm:NotNullConverter.Instance}}" />
+
+                    <Entry Text="{Binding AllocateAmount}" Keyboard="Numeric" Placeholder="Amount to allocate" />
+                    <Button Text="Allocate" Command="{Binding AllocateCommand}" />
+
+                    <BoxView HeightRequest="1" Color="#E2E8E7" />
+
+                    <CollectionView ItemsSource="{Binding Allocations}">
+                        <CollectionView.EmptyView>
+                            <Label Text="No allocations yet." Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:PaymentAllocation">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Invoice.Number}" />
+                                        <Label Text="{Binding AllocatedAmount, StringFormat='{0:C}'}" Style="{StaticResource Caption}" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="1"
+                                            Text="Reverse"
+                                            FontSize="12" HeightRequest="34" Padding="10,0"
+                                            BackgroundColor="Transparent" TextColor="{StaticResource Muted}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PaymentEditViewModel}}, Path=ReverseCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

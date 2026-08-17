@@ -6,7 +6,10 @@ public enum InvoiceStatus
     Sent = 1,
     Paid = 2,
     Overdue = 3,
-    Cancelled = 4
+    Cancelled = 4,
+
+    /// <summary>Server-computed from payment allocations — not directly settable (see §0/§14).</summary>
+    PartiallyPaid = 5
 }
 
 public class Invoice
@@ -22,6 +25,10 @@ public class Invoice
     public int? JobCardId { get; set; }
     public JobCard? JobCard { get; set; }
 
+    /// <summary>The issuing business entity — determines VAT and which banking/contact details print on the document.</summary>
+    public int? CompanyId { get; set; }
+    public Company? Company { get; set; }
+
     public InvoiceStatus Status { get; set; } = InvoiceStatus.Draft;
 
     public DateTime IssuedOn { get; set; } = DateTime.UtcNow;
@@ -35,9 +42,15 @@ public class Invoice
 
     public List<InvoiceLine> Lines { get; set; } = new();
 
+    /// <summary>Populated via <see cref="PaymentAllocation"/> — see §13/§14.</summary>
+    public List<PaymentAllocation> Allocations { get; set; } = new();
+
     public decimal Subtotal => Math.Round(Lines.Sum(l => l.LineTotal), 2);
     public decimal TaxAmount => Math.Round(Subtotal * TaxRate, 2);
     public decimal Total => Subtotal + TaxAmount;
+
+    public decimal AllocatedAmount => Math.Round(Allocations.Sum(a => a.AllocatedAmount), 2);
+    public decimal OutstandingAmount => Total - AllocatedAmount;
 }
 
 public class InvoiceLine

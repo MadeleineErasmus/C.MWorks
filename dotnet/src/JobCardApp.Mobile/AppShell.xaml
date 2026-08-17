@@ -8,12 +8,28 @@
        Shell.TitleColor="White"
        Shell.TabBarTitleColor="{StaticResource Brand}">
 
+    <ShellContent Title="Login"
+                  Route="login"
+                  ContentTemplate="{DataTemplate pages:LoginPage}" />
+
     <TabBar>
         <ShellContent Title="Job cards"
                       Route="jobcards"
                       ContentTemplate="{DataTemplate pages:JobCardListPage}" />
+        <ShellContent Title="Customers"
+                      Route="customers"
+                      ContentTemplate="{DataTemplate pages:CustomerListPage}" />
+        <ShellContent Title="Quotes"
+                      Route="quotes"
+                      ContentTemplate="{DataTemplate pages:QuoteListPage}" />
         <ShellContent Title="Invoices"
                       Route="invoices"
                       ContentTemplate="{DataTemplate pages:InvoiceListPage}" />
+        <ShellContent Title="Payments"
+                      Route="payments"
+                      ContentTemplate="{DataTemplate pages:PaymentListPage}" />
+        <ShellContent Title="Companies"
+                      Route="companies"
+                      ContentTemplate="{DataTemplate pages:CompanyListPage}" />
     </TabBar>
 </Shell>

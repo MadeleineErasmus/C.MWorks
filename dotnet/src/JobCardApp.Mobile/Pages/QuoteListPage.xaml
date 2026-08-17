@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.QuoteListPage"
+             x:DataType="vm:QuoteListViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Quotes">
+
+    <Grid RowDefinitions="Auto,*" Padding="12" RowSpacing="10">
+
+        <Label Grid.Row="0"
+               Text="{Binding Error}"
+               TextColor="#B00020"
+               IsVisible="{Binding Error, Converter={x:Static vm:NotNullConverter.Instance}}" />
+
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Quotes}">
+                <CollectionView.EmptyView>
+                    <Label Text="No quotes yet. Create one from a job card."
+                           HorizontalOptions="Center"
+                           Margin="0,40"
+                           Style="{StaticResource Caption}" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Quote">
+                        <Border Style="{StaticResource CardFrame}" Margin="0,0,0,10">
+                            <VerticalStackLayout Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0" Text="{Binding Number}" FontAttributes="Bold" />
+                                    <Label Grid.Column="1" Text="{Binding Status}" Style="{StaticResource Caption}" />
+                                </Grid>
+
+                                <Label Text="{Binding Customer.Name}" Style="{StaticResource Caption}" />
+
+                                <Label Style="{StaticResource Caption}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding Company.Name}" />
+                                            <Span Text=" · expires " />
+                                            <Span Text="{Binding ExpiresOn, StringFormat='{0:d}'}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+
+                                <Label Text="{Binding Total, StringFormat='Total {0:C}'}" FontAttributes="Bold" />
+
+                                <FlexLayout Wrap="Wrap" JustifyContent="Start">
+                                    <Button Text="Send"
+                                            FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                            IsVisible="{Binding CanSend}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=SendCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Accepted"
+                                            FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                            IsVisible="{Binding CanAcceptOrReject}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=AcceptCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Rejected"
+                                            FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                            IsVisible="{Binding CanAcceptOrReject}"
+                                            BackgroundColor="#B00020"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=RejectCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Convert to invoice"
+                                            FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                            IsVisible="{Binding CanConvertToInvoice}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=ConvertToInvoiceCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Delete"
+                                            FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                            IsVisible="{Binding CanDelete}"
+                                            BackgroundColor="Transparent" TextColor="{StaticResource Muted}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:QuoteListViewModel}}, Path=DeleteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </FlexLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

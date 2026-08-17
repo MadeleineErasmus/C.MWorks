@@ -12,15 +12,20 @@ public static class InvoiceFactory
     {
         var now = DateTime.UtcNow;
 
+        // The job card's company (if set) is authoritative for VAT — a
+        // non-VAT company always yields 0, regardless of the fallback rate.
+        var resolvedTaxRate = jobCard.Company?.TaxRate ?? taxRate;
+
         return new Invoice
         {
             Number = number,
             CustomerId = jobCard.CustomerId,
             JobCardId = jobCard.Id,
+            CompanyId = jobCard.CompanyId,
             Status = InvoiceStatus.Draft,
             IssuedOn = now,
             DueOn = now.AddDays(paymentTermDays),
-            TaxRate = taxRate,
+            TaxRate = resolvedTaxRate,
             Notes = $"For jobcard {jobCard.Reference}: {jobCard.Title}",
             Lines = jobCard.Lines.Select(l => new InvoiceLine
             {
