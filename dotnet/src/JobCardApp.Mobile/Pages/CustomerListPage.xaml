@@ -10,7 +10,8 @@
 
     <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="12" RowSpacing="10">
 
-        <SearchBar Grid.Row="0"
+        <SearchBar x:Name="CustomerSearchBar"
+                   Grid.Row="0"
                    Placeholder="Search name, email, phone, VAT number"
                    Text="{Binding SearchText}"
                    SearchCommand="{Binding LoadCommand}" />

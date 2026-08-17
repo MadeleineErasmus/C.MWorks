@@ -43,7 +43,6 @@ public partial class JobCardEditViewModel : ObservableObject
     [ObservableProperty] private bool isPricingHistoryVisible;
     [ObservableProperty] private bool isPricingHistoryBusy;
     [ObservableProperty] private CustomerItem? selectedCustomerItem;
-    [ObservableProperty] private bool isAddingNewItem;
     [ObservableProperty] private string newItemName = string.Empty;
 
     public ObservableCollection<Customer> Customers { get; } = new();
@@ -196,9 +195,6 @@ public partial class JobCardEditViewModel : ObservableObject
         SelectedCustomerItem = null;
     }
 
-    [RelayCommand]
-    private void ToggleAddingNewItem() => IsAddingNewItem = !IsAddingNewItem;
-
     /// <summary>
     /// Lets the technician type a new equipment name inline while adding a
     /// line — created (or found, if it already exists for this customer)
@@ -226,7 +222,6 @@ public partial class JobCardEditViewModel : ObservableObject
         }
 
         NewItemName = string.Empty;
-        IsAddingNewItem = false;
     }
 
     [RelayCommand]

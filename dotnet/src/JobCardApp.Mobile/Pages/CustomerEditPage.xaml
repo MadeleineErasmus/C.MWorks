@@ -8,6 +8,10 @@
              BackgroundColor="{StaticResource Surface}"
              Title="Customer">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
+
     <ScrollView>
         <VerticalStackLayout Padding="14" Spacing="12">
 
@@ -33,9 +37,12 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Border Style="{StaticResource CardFrame}" IsVisible="{Binding CanDelete}">
+            <Border Style="{StaticResource CardFrame}">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Equipment" FontAttributes="Bold" />
+                    <Label Text="Save the customer first, then add equipment here."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanDelete, Converter={x:Static vm:InverseBoolConverter.Instance}}" />
 
                     <CollectionView ItemsSource="{Binding Items}">
                         <CollectionView.EmptyView>

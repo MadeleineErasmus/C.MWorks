@@ -73,7 +73,12 @@ public partial class CustomerEditViewModel : ObservableObject
     [RelayCommand]
     private async Task AddItemAsync()
     {
-        if (CustomerId <= 0 || string.IsNullOrWhiteSpace(NewItemName)) return;
+        if (CustomerId <= 0)
+        {
+            await Shell.Current.DisplayAlert("Save the customer first", "Equipment can be added once the customer has been saved.", "OK");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(NewItemName)) return;
 
         try
         {

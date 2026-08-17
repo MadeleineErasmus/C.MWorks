@@ -124,16 +124,8 @@
                             ItemDisplayBinding="{Binding Name}"
                             SelectedItem="{Binding SelectedCustomerItem}" />
 
-                    <Button Text="+ Add new item"
-                            FontSize="13"
-                            HeightRequest="34"
-                            BackgroundColor="Transparent"
-                            TextColor="{StaticResource Brand}"
-                            Command="{Binding ToggleAddingNewItemCommand}" />
-
-                    <Grid ColumnDefinitions="*,Auto"
-                          ColumnSpacing="8"
-                          IsVisible="{Binding IsAddingNewItem}">
+                    <Label Text="Not on the list? Type a new item name and add it:" Style="{StaticResource Caption}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <Entry Grid.Column="0" Text="{Binding NewItemName}" Placeholder="New item name, e.g. Front gate motor" />
                         <Button Grid.Column="1" Text="Add" Command="{Binding AddNewCustomerItemCommand}" />
                     </Grid>
