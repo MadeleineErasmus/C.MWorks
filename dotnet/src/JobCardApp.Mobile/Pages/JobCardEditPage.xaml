@@ -14,9 +14,23 @@
             <Border Style="{StaticResource CardFrame}">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Customer" Style="{StaticResource Caption}" />
-                    <Picker ItemsSource="{Binding Customers}"
-                            ItemDisplayBinding="{Binding Name}"
-                            SelectedItem="{Binding SelectedCustomer}" />
+                    <Entry Text="{Binding CustomerSearchText}" Placeholder="Type to search customers..." />
+                    <VerticalStackLayout IsVisible="{Binding IsCustomerSuggestionsVisible}" Spacing="0">
+                        <CollectionView ItemsSource="{Binding FilteredCustomers}" HeightRequest="160">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:Customer">
+                                    <Grid Padding="10,10">
+                                        <Label Text="{Binding Name}" />
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=SelectCustomerCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Grid.GestureRecognizers>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
 
                     <Label Text="Billing company" Style="{StaticResource Caption}" />
                     <Picker ItemsSource="{Binding Companies}"
@@ -30,9 +44,23 @@
                     <Editor Text="{Binding Description}" HeightRequest="80" />
 
                     <Label Text="Site (optional)" Style="{StaticResource Caption}" />
-                    <Picker ItemsSource="{Binding Sites}"
-                            ItemDisplayBinding="{Binding Name}"
-                            SelectedItem="{Binding SelectedSite}" />
+                    <Entry Text="{Binding SiteSearchText}" Placeholder="Type to search this customer's sites..." />
+                    <VerticalStackLayout IsVisible="{Binding IsSiteSuggestionsVisible}" Spacing="0">
+                        <CollectionView ItemsSource="{Binding FilteredSites}" HeightRequest="160">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:CustomerSite">
+                                    <Grid Padding="10,10">
+                                        <Label Text="{Binding Name}" />
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=SelectSiteCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Grid.GestureRecognizers>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
 
                     <Label Text="Site address" Style="{StaticResource Caption}" />
                     <Entry Text="{Binding SiteAddress}" />

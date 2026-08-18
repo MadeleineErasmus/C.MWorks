@@ -135,6 +135,21 @@ public class ApiClient
     public Task<CustomerItem?> GetCustomerItemAsync(int itemId)
         => _http.GetFromJsonAsync<CustomerItem>($"api/customer-items/{itemId}", JsonOptions);
 
+    public async Task<CustomerItem?> UpdateCustomerItemAsync(int itemId, string name, string? category)
+    {
+        var response = await _http.PutAsJsonAsync($"api/customer-items/{itemId}", new CustomerItem { Name = name, Category = category });
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+        return await response.Content.ReadFromJsonAsync<CustomerItem>(JsonOptions);
+    }
+
+    public async Task DeleteCustomerItemAsync(int itemId)
+    {
+        var response = await _http.DeleteAsync($"api/customer-items/{itemId}");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+    }
+
     // Customer emails
     public Task<List<CustomerEmail>?> GetCustomerEmailsAsync(int customerId)
         => _http.GetFromJsonAsync<List<CustomerEmail>>($"api/customers/{customerId}/emails", JsonOptions);

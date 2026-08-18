@@ -25,6 +25,13 @@
     <CodesignEntitlements>Platforms\MacCatalyst\Entitlements.plist</CodesignEntitlements>
   </PropertyGroup>
 
+  <!-- Defaults to arm64-v8a/x86_64 only, which excludes 32-bit-only Android
+       Go Edition devices (e.g. Galaxy A03 Core) entirely — "App not
+       installed" with no other explanation is the usual symptom. -->
+  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <RuntimeIdentifiers>android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\appicon.png" />
     <MauiSplashScreen Include="Resources\Splash\splash.png" Color="#5B3A99" BaseSize="300,300" />

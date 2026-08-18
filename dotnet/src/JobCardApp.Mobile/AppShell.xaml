@@ -6,7 +6,8 @@
        Shell.FlyoutBehavior="Disabled"
        Shell.BackgroundColor="{StaticResource Brand}"
        Shell.TitleColor="White"
-       Shell.TabBarTitleColor="{StaticResource Brand}">
+       Shell.TabBarTitleColor="White"
+       Shell.TabBarUnselectedColor="{StaticResource BrandDark}">
 
     <ShellContent Title="Login"
                   Route="login"

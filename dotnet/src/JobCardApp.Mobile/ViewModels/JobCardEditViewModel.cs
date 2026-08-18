@@ -23,6 +23,8 @@ public partial class JobCardEditViewModel : ObservableObject
     [ObservableProperty] private string? siteAddress;
     [ObservableProperty] private string? technician;
     [ObservableProperty] private Customer? selectedCustomer;
+    [ObservableProperty] private string customerSearchText = string.Empty;
+    [ObservableProperty] private bool isCustomerSuggestionsVisible;
     [ObservableProperty] private Company? selectedCompany;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanComplete))]
@@ -39,6 +41,13 @@ public partial class JobCardEditViewModel : ObservableObject
     // user picking a site, so it must not overwrite the job card's own saved
     // SiteAddress text (which may have drifted from the site's address).
     private bool _restoringSite;
+    // Suppresses the search-text-driven filtering when CustomerSearchText is
+    // being synced FROM a SelectedCustomer that was just set programmatically
+    // (loading an existing job card, or a suggestion tap) — that's not the
+    // user typing a search, so it must not reopen the suggestions list.
+    private bool _syncingCustomerSearchText;
+    // Same purpose as _syncingCustomerSearchText, for the Site autocomplete.
+    private bool _syncingSiteSearchText;
 
     // New line entry fields
     [ObservableProperty] private string newLineDescription = string.Empty;
@@ -50,14 +59,18 @@ public partial class JobCardEditViewModel : ObservableObject
     [ObservableProperty] private CustomerItem? selectedCustomerItem;
     [ObservableProperty] private string newItemName = string.Empty;
     [ObservableProperty] private CustomerSite? selectedSite;
+    [ObservableProperty] private string siteSearchText = string.Empty;
+    [ObservableProperty] private bool isSiteSuggestionsVisible;
     [ObservableProperty] private string newSiteName = string.Empty;
 
     public ObservableCollection<Customer> Customers { get; } = new();
+    public ObservableCollection<Customer> FilteredCustomers { get; } = new();
     public ObservableCollection<Company> Companies { get; } = new();
     public ObservableCollection<JobCardLine> Lines { get; } = new();
     public ObservableCollection<PricingHistoryEntry> PricingHistory { get; } = new();
     public ObservableCollection<CustomerItem> CustomerItems { get; } = new();
     public ObservableCollection<CustomerSite> Sites { get; } = new();
+    public ObservableCollection<CustomerSite> FilteredSites { get; } = new();
     public IReadOnlyList<LineKind> LineKinds { get; } = Enum.GetValues<LineKind>();
 
     public bool HasJobCard => JobCardId > 0;
@@ -83,8 +96,54 @@ public partial class JobCardEditViewModel : ObservableObject
     {
         SelectedCustomerItem = null;
         SelectedSite = null;
+        SiteSearchText = string.Empty;
         _ = LoadCustomerItemsAsync();
         _ = LoadSitesAsync();
+
+        // Only sync the text box when a customer is actually picked (typing
+        // a search, loading an existing job card). When value is null
+        // because typing stopped matching (below), the text box already
+        // holds exactly what was typed and must be left alone — syncing it
+        // to "" here would erase it on every non-matching keystroke.
+        if (value is not null)
+        {
+            _syncingCustomerSearchText = true;
+            CustomerSearchText = value.Name;
+            _syncingCustomerSearchText = false;
+            IsCustomerSuggestionsVisible = false;
+        }
+    }
+
+    /// <summary>
+    /// Autocomplete: typing filters Customers to matches and shows the
+    /// suggestion list; tapping a suggestion (SelectCustomerCommand) sets
+    /// SelectedCustomer, which syncs this text back and hides the list again.
+    /// </summary>
+    partial void OnCustomerSearchTextChanged(string value)
+    {
+        if (_syncingCustomerSearchText) return;
+
+        // Typing no longer matches the previously picked customer — that
+        // selection is stale until they pick again.
+        if (SelectedCustomer is not null && !string.Equals(SelectedCustomer.Name, value, StringComparison.OrdinalIgnoreCase))
+            SelectedCustomer = null;
+
+        FilteredCustomers.Clear();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            IsCustomerSuggestionsVisible = false;
+            return;
+        }
+
+        foreach (var c in Customers.Where(c => c.Name.Contains(value, StringComparison.OrdinalIgnoreCase)))
+            FilteredCustomers.Add(c);
+        IsCustomerSuggestionsVisible = FilteredCustomers.Count > 0;
+    }
+
+    [RelayCommand]
+    private void SelectCustomer(Customer customer)
+    {
+        SelectedCustomer = customer;
     }
 
     /// <summary>
@@ -97,6 +156,47 @@ public partial class JobCardEditViewModel : ObservableObject
     {
         if (value is not null && !_restoringSite)
             SiteAddress = value.Address;
+
+        // Same reasoning as OnSelectedCustomerChanged: only sync the text box
+        // forward when a site is actually picked/restored, never when it's
+        // cleared as a side effect of typing (see OnSiteSearchTextChanged).
+        if (value is not null)
+        {
+            _syncingSiteSearchText = true;
+            SiteSearchText = value.Name;
+            _syncingSiteSearchText = false;
+            IsSiteSuggestionsVisible = false;
+        }
+    }
+
+    /// <summary>
+    /// Autocomplete for Site, mirroring the Customer field's behavior:
+    /// typing filters Sites to matches and shows the suggestion list;
+    /// tapping a suggestion (SelectSiteCommand) sets SelectedSite.
+    /// </summary>
+    partial void OnSiteSearchTextChanged(string value)
+    {
+        if (_syncingSiteSearchText) return;
+
+        if (SelectedSite is not null && !string.Equals(SelectedSite.Name, value, StringComparison.OrdinalIgnoreCase))
+            SelectedSite = null;
+
+        FilteredSites.Clear();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            IsSiteSuggestionsVisible = false;
+            return;
+        }
+
+        foreach (var s in Sites.Where(s => s.Name.Contains(value, StringComparison.OrdinalIgnoreCase)))
+            FilteredSites.Add(s);
+        IsSiteSuggestionsVisible = FilteredSites.Count > 0;
+    }
+
+    [RelayCommand]
+    private void SelectSite(CustomerSite site)
+    {
+        SelectedSite = site;
     }
 
     partial void OnIncludeCallOutFeeChanged(bool value)
@@ -166,7 +266,9 @@ public partial class JobCardEditViewModel : ObservableObject
             }
             else
             {
-                SelectedCustomer ??= Customers.FirstOrDefault();
+                // Left blank by default — the technician must actively pick
+                // or search for the right customer rather than starting on
+                // whichever one happened to load first.
                 // Most businesses only have one company — default to it so
                 // there's nothing extra to pick in the common case.
                 SelectedCompany ??= Companies.FirstOrDefault();

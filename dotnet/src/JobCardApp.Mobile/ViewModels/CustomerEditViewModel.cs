@@ -161,6 +161,54 @@ public partial class CustomerEditViewModel : ObservableObject
     private Task ViewItemHistoryAsync(CustomerItem item)
         => Shell.Current.GoToAsync($"customer-item-history?id={item.Id}");
 
+    /// <summary>Prompts for a new category and saves it — name stays as-is, only Category changes.</summary>
+    [RelayCommand]
+    private async Task ChangeItemCategoryAsync(CustomerItem item)
+    {
+        var newCategory = await Shell.Current.DisplayPromptAsync(
+            "Change category", $"Category for {item.Name}", "Save", "Cancel",
+            placeholder: "e.g. Motor", initialValue: item.Category ?? string.Empty);
+        if (newCategory is null) return;
+
+        try
+        {
+            var updated = await _api.UpdateCustomerItemAsync(item.Id, item.Name, newCategory.Trim());
+            if (updated is not null)
+            {
+                var existing = Items.FirstOrDefault(i => i.Id == item.Id);
+                if (existing is not null) existing.Category = updated.Category;
+                RebuildCategories();
+                RebuildGroupedItems();
+            }
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not update category", ex.Message, "OK");
+        }
+    }
+
+    /// <summary>Blocked server-side (409) if the item has recorded history — the API's error message is shown as-is so the technician knows why.</summary>
+    [RelayCommand]
+    private async Task RemoveItemAsync(CustomerItem item)
+    {
+        var confirmed = await Shell.Current.DisplayAlert(
+            "Remove equipment", $"Remove {item.Name}?", "Remove", "Cancel");
+        if (!confirmed) return;
+
+        try
+        {
+            await _api.DeleteCustomerItemAsync(item.Id);
+            var existing = Items.FirstOrDefault(i => i.Id == item.Id);
+            if (existing is not null) Items.Remove(existing);
+            RebuildCategories();
+            RebuildGroupedItems();
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Could not remove equipment", ex.Message, "OK");
+        }
+    }
+
     /// <summary>
     /// Additional recipients for this customer's quote/invoice PDFs, on top
     /// of the primary Email field above — find-or-create server side so a

@@ -56,16 +56,25 @@
                         </CollectionView.GroupHeaderTemplate>
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="models:CustomerItem">
-                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
-                                    <Label Grid.Column="0" Text="{Binding Name}" VerticalOptions="Center" />
-                                    <Button Grid.Column="1"
-                                            Text="History"
-                                            FontSize="12"
-                                            HeightRequest="34"
-                                            Padding="8,0"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=ViewItemHistoryCommand}"
-                                            CommandParameter="{Binding .}" />
-                                </Grid>
+                                <VerticalStackLayout Padding="0,6" Spacing="4">
+                                    <Label Text="{Binding Name}" />
+                                    <FlexLayout Wrap="Wrap" JustifyContent="Start">
+                                        <Button Text="History"
+                                                FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=ViewItemHistoryCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Text="Category"
+                                                FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                                BackgroundColor="{StaticResource BrandDark}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=ChangeItemCategoryCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Text="Remove"
+                                                FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                                BackgroundColor="Transparent" TextColor="{StaticResource Muted}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=RemoveItemCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </FlexLayout>
+                                </VerticalStackLayout>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>

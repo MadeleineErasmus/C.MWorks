@@ -14,15 +14,19 @@ public static class ApiConfig
 
     /// <summary>
     /// Where the API lives.
-    ///   Android emulator            -> http://10.0.2.2:5080
-    ///   iOS Simulator (paired Mac)  -> http://{DevMachineLanIp}:5080 (Mac must be on the same network)
-    ///   MacCatalyst/Windows (local) -> http://localhost:5080
-    ///   Real device (any OS)        -> http://YOUR-LAN-IP:5080 (same network as this PC)
+    ///   Android (emulator or real device) -> http://{DevMachineLanIp}:5080
+    ///   iOS Simulator (paired Mac)         -> http://{DevMachineLanIp}:5080 (Mac must be on the same network)
+    ///   MacCatalyst/Windows (local)        -> http://localhost:5080
+    ///
+    /// Note: 10.0.2.2 is a special alias that ONLY resolves on the Android
+    /// emulator's virtual network — it means nothing to a real device, which
+    /// is why a physical phone gets a connection timeout if this is set to
+    /// it. The LAN IP below works from both the emulator and a real device,
+    /// as long as the device's own network (Wi-Fi, not just USB/adb) is on
+    /// the same LAN as this PC.
     /// </summary>
     public static string BaseUrl =>
-#if ANDROID
-        "http://10.0.2.2:5080";
-#elif IOS
+#if ANDROID || IOS
         $"http://{DevMachineLanIp}:5080";
 #else
         "http://localhost:5080";
