@@ -153,6 +153,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.Quantity).HasPrecision(18, 2);
             e.Property(x => x.UnitPrice).HasPrecision(18, 2);
             e.Ignore(x => x.LineTotal);
+            e.Ignore(x => x.LastInvoicedSummary);
         });
 
         b.Entity<User>(e =>
