@@ -18,11 +18,12 @@ public class JobCardsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<JobCard>>> GetAll([FromQuery] JobCardStatus? status)
     {
+        // Deliberately narrower than Get(id): the list only renders Title,
+        // Status, Customer.Name, Reference and Subtotal (summed from Lines),
+        // so Company/Site/CustomerItem would be pure JOIN cost per refresh.
         var query = _db.JobCards
             .Include(j => j.Customer)
-            .Include(j => j.Company)
-            .Include(j => j.Site)
-            .Include(j => j.Lines).ThenInclude(l => l.CustomerItem)
+            .Include(j => j.Lines)
             .AsQueryable();
 
         if (status.HasValue)
@@ -82,6 +83,12 @@ public class JobCardsController : ControllerBase
             .Include(j => j.Lines)
             .FirstOrDefaultAsync(j => j.Id == id);
         if (existing is null) return NotFound();
+
+        // Defence in depth: the client hides its edit controls once a job card
+        // is Invoiced, but the invoice is derived from these lines, so editing
+        // them afterwards must be impossible regardless of the caller.
+        if (existing.Status == JobCardStatus.Invoiced)
+            return Conflict("An invoiced job card can no longer be edited.");
 
         existing.CustomerId = jobCard.CustomerId;
         existing.CompanyId = jobCard.CompanyId;

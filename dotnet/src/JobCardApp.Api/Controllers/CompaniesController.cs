@@ -57,6 +57,8 @@ public class CompaniesController : ControllerBase
         existing.IsVatRegistered = company.IsVatRegistered;
         existing.VatNumber = company.VatNumber;
         existing.TaxRate = company.TaxRate;
+        existing.DefaultCallOutFee = company.DefaultCallOutFee;
+        existing.DefaultLabourRate = company.DefaultLabourRate;
         existing.BankName = company.BankName;
         existing.AccountHolder = company.AccountHolder;
         existing.AccountNumber = company.AccountNumber;

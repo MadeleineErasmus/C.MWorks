@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             xmlns:conv="clr-namespace:JobCardApp.Mobile.ViewModels;assembly=JobCardApp.Mobile.Core"
+             x:Class="JobCardApp.Mobile.Pages.StatementPage"
+             x:DataType="vm:StatementViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Statement">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Label Text="{Binding CustomerName}" FontAttributes="Bold" FontSize="18" />
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label Text="From" Style="{StaticResource Caption}" />
+                            <DatePicker Date="{Binding FromDate}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1">
+                            <Label Text="To" Style="{StaticResource Caption}" />
+                            <DatePicker Date="{Binding ToDate}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Button Text="Refresh" Command="{Binding LoadCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding Error}"
+                   TextColor="#B00020"
+                   IsVisible="{Binding Error, Converter={x:Static conv:NotNullConverter.Instance}}" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Opening balance" Style="{StaticResource Caption}" />
+                    <Label Text="{Binding OpeningBalance, StringFormat='{0:C}'}" FontAttributes="Bold" FontSize="18" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="80,*,70,70,80">
+                        <Label Grid.Column="0" Text="Date" Style="{StaticResource Caption}" FontAttributes="Bold" />
+                        <Label Grid.Column="1" Text="Document" Style="{StaticResource Caption}" FontAttributes="Bold" />
+                        <Label Grid.Column="2" Text="Debit" Style="{StaticResource Caption}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                        <Label Grid.Column="3" Text="Credit" Style="{StaticResource Caption}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                        <Label Grid.Column="4" Text="Balance" Style="{StaticResource Caption}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <CollectionView ItemsSource="{Binding Entries}">
+                        <CollectionView.EmptyView>
+                            <Label Text="No transactions in this date range."
+                                   Style="{StaticResource Caption}"
+                                   Margin="0,10" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:StatementEntry">
+                                <Grid ColumnDefinitions="80,*,70,70,80" Padding="0,4">
+                                    <Label Grid.Column="0" Text="{Binding Date, StringFormat='{0:d}'}" FontSize="12" />
+                                    <Label Grid.Column="1" Text="{Binding Document}" FontSize="12" LineBreakMode="TailTruncation" />
+                                    <Label Grid.Column="2" Text="{Binding Debit, StringFormat='{0:N0}'}" FontSize="12" HorizontalTextAlignment="End" />
+                                    <Label Grid.Column="3" Text="{Binding Credit, StringFormat='{0:N0}'}" FontSize="12" HorizontalTextAlignment="End" />
+                                    <Label Grid.Column="4" Text="{Binding Balance, StringFormat='{0:N0}'}" FontSize="12" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Closing balance" Style="{StaticResource Caption}" />
+                    <Label Text="{Binding ClosingBalance, StringFormat='{0:C}'}" FontAttributes="Bold" FontSize="20" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

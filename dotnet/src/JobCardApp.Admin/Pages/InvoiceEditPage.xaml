@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             xmlns:conv="clr-namespace:JobCardApp.Mobile.ViewModels;assembly=JobCardApp.Mobile.Core"
+             x:Class="JobCardApp.Mobile.Pages.InvoiceEditPage"
+             x:DataType="vm:InvoiceEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Invoice">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" Text="{Binding Number}" FontAttributes="Bold" FontSize="18" />
+                        <Label Grid.Column="1" Text="{Binding Status}" Style="{StaticResource Caption}" VerticalOptions="Center" />
+                    </Grid>
+
+                    <Label Text="{Binding CustomerName}" FontSize="14" />
+                    <Label Style="{StaticResource Caption}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding CompanyName}" />
+                                <Span Text=" · issued " />
+                                <Span Text="{Binding IssuedOn, StringFormat='{0:d}'}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+
+                    <Label Text="{Binding OutstandingAmount, StringFormat='Outstanding: {0:C}'}" FontAttributes="Bold" />
+
+                    <Label Style="{StaticResource Caption}" IsVisible="{Binding HasSentInfo}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Sent " />
+                                <Span Text="{Binding SentAt, StringFormat='{0:d}'}" />
+                                <Span Text=" to " />
+                                <Span Text="{Binding SentTo}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Due" Style="{StaticResource Caption}" />
+                    <DatePicker Date="{Binding DueOn}" IsEnabled="{Binding CanEditLines}" />
+
+                    <Label Text="Notes" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Notes}" HeightRequest="80" IsEnabled="{Binding CanEditLines}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Line items" FontAttributes="Bold" />
+                    <Label Text="Sent — line items are locked. Revise to edit."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanEditLines, Converter={x:Static conv:InverseBoolConverter.Instance}}" />
+
+                    <CollectionView ItemsSource="{Binding Lines}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:InvoiceLine">
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,6">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Description}" />
+
+                                        <!-- Locked (Sent/etc.): read-only -->
+                                        <Label Style="{StaticResource Caption}"
+                                               IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceEditViewModel}}, Path=CanEditLines, Converter={x:Static conv:InverseBoolConverter.Instance}}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Quantity}" />
+                                                    <Span Text=" × " />
+                                                    <Span Text="{Binding UnitPrice, StringFormat='{0:C}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+
+                                        <!-- Draft: editable, so a wrong job-card price can be corrected here -->
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="4"
+                                              IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceEditViewModel}}, Path=CanEditLines}">
+                                            <Entry Grid.Column="0" Text="{Binding Quantity}" Keyboard="Numeric"
+                                                   WidthRequest="50" FontSize="13" Unfocused="OnLineFieldUnfocused" />
+                                            <Label Grid.Column="1" Text="×" VerticalOptions="Center" Style="{StaticResource Caption}" />
+                                            <Entry Grid.Column="2" Text="{Binding UnitPrice}" Keyboard="Numeric"
+                                                   WidthRequest="80" FontSize="13" Unfocused="OnLineFieldUnfocused" />
+                                        </Grid>
+
+                                        <Label Text="{Binding LastInvoicedSummary}"
+                                               Style="{StaticResource Caption}"
+                                               FontSize="11"
+                                               TextColor="{StaticResource Muted}"
+                                               IsVisible="{Binding LastInvoicedSummary, Converter={x:Static conv:NotNullConverter.Instance}}" />
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="1"
+                                           Text="{Binding LineTotal, StringFormat='{0:C}'}"
+                                           VerticalOptions="Center" />
+
+                                    <Button Grid.Column="2"
+                                            Text="✕"
+                                            WidthRequest="40"
+                                            HeightRequest="34"
+                                            BackgroundColor="Transparent"
+                                            TextColor="{StaticResource Muted}"
+                                            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceEditViewModel}}, Path=CanEditLines}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InvoiceEditViewModel}}, Path=RemoveLineCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <VerticalStackLayout Spacing="8" IsVisible="{Binding CanEditLines}">
+                        <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                        <Entry Text="{Binding NewLineDescription}" Placeholder="Description" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Text="{Binding NewLineQuantity}" Keyboard="Numeric" Placeholder="Qty" />
+                            <Entry Grid.Column="1" Text="{Binding NewLineUnitPrice}" Keyboard="Numeric" Placeholder="Unit price" />
+                        </Grid>
+                        <Button Text="Add line" Command="{Binding AddLineCommand}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="2" HorizontalOptions="End">
+                        <Label Text="{Binding Subtotal, StringFormat='Subtotal: {0:C}'}" />
+                        <Label Text="{Binding TaxAmount, StringFormat='VAT: {0:C}'}" Style="{StaticResource Caption}" />
+                        <Label Text="{Binding Total, StringFormat='Total: {0:C}'}" FontAttributes="Bold" FontSize="16" />
+                    </VerticalStackLayout>
+
+                    <Button Text="Save changes" Command="{Binding SaveChangesCommand}" IsVisible="{Binding CanEditLines}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Button Text="Send to customer"
+                            Command="{Binding SendCommand}"
+                            IsVisible="{Binding CanSend}" />
+                    <Button Text="Revise (unlock for editing)"
+                            Command="{Binding ReviseCommand}"
+                            IsVisible="{Binding CanRevise}"
+                            BackgroundColor="{StaticResource BrandDark}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

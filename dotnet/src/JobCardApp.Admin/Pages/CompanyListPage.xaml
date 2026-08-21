@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             xmlns:conv="clr-namespace:JobCardApp.Mobile.ViewModels;assembly=JobCardApp.Mobile.Core"
+             x:Class="JobCardApp.Mobile.Pages.CompanyListPage"
+             x:DataType="vm:CompanyListViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Companies">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="12" RowSpacing="10">
+
+        <Label Grid.Row="0"
+               Text="{Binding Error}"
+               TextColor="#B00020"
+               IsVisible="{Binding Error, Converter={x:Static conv:NotNullConverter.Instance}}" />
+
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Companies}">
+                <CollectionView.EmptyView>
+                    <Label Text="No companies yet. Tap + New company."
+                           HorizontalOptions="Center"
+                           Margin="0,40"
+                           Style="{StaticResource Caption}" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Company">
+                        <Border Style="{StaticResource CardFrame}" Margin="0,0,0,10">
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+                                <Label Grid.Row="0"
+                                       Text="{Binding Name}"
+                                       FontAttributes="Bold"
+                                       FontSize="16" />
+                                <Label Grid.Row="1" Style="{StaticResource Caption}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding IsVatRegistered, StringFormat='VAT registered: {0}'}" />
+                                            <Span Text=" · " />
+                                            <Span Text="{Binding TaxRate, StringFormat='{0:P0}'}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CompanyListViewModel}}, Path=OpenCompanyCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <Button Grid.Row="2"
+                Text="+ New company"
+                Command="{Binding NewCompanyCommand}" />
+    </Grid>
+</ContentPage>

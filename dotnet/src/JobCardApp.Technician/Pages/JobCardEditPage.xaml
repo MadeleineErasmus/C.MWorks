@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             xmlns:conv="clr-namespace:JobCardApp.Mobile.ViewModels;assembly=JobCardApp.Mobile.Core"
+             x:Class="JobCardApp.Mobile.Pages.JobCardEditPage"
+             x:DataType="vm:JobCardEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Job card">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <!-- Tapping empty space dismisses the keyboard (see OnPageTapped).
+             Interactive children handle their own taps first, so buttons and
+             the suggestion rows' own recognizers are unaffected. -->
+        <ScrollView.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnPageTapped" />
+        </ScrollView.GestureRecognizers>
+
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Invoiced — this job card is locked and can no longer be edited."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanEdit, Converter={x:Static conv:InverseBoolConverter.Instance}}" />
+
+                    <Label Text="Customer" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding CustomerSearchText}"
+                           Placeholder="Type to search customers..."
+                           IsEnabled="{Binding CanEdit}" />
+                    <VerticalStackLayout IsVisible="{Binding IsCustomerSuggestionsVisible}" Spacing="0">
+                        <CollectionView ItemsSource="{Binding FilteredCustomers}" HeightRequest="160">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:Customer">
+                                    <Grid Padding="10,10">
+                                        <Label Text="{Binding Name}" />
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=SelectCustomerCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Grid.GestureRecognizers>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+
+                    <Label Text="Not on the list? Name it and save it as a new customer:" Style="{StaticResource Caption}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0"
+                               Text="{Binding NewCustomerName}"
+                               Placeholder="Customer name, e.g. Acme Manufacturing"
+                               IsEnabled="{Binding CanEdit}" />
+                        <Button Grid.Column="1"
+                                Text="Add"
+                                Command="{Binding AddCustomerCommand}"
+                                IsEnabled="{Binding CanEdit}" />
+                    </Grid>
+
+                    <Label Text="Billing company" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Companies}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCompany}"
+                            IsEnabled="{Binding CanEdit}" />
+
+                    <Label Text="Title" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Title}"
+                           Placeholder="e.g. Compressor service"
+                           IsEnabled="{Binding CanEdit}" />
+
+                    <Label Text="Description" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Description}" HeightRequest="80" IsEnabled="{Binding CanEdit}" />
+
+                    <Label Text="Site (optional)" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding SiteSearchText}"
+                           Placeholder="Type to search this customer's sites..."
+                           IsEnabled="{Binding CanEdit}" />
+                    <VerticalStackLayout IsVisible="{Binding IsSiteSuggestionsVisible}" Spacing="0">
+                        <CollectionView ItemsSource="{Binding FilteredSites}" HeightRequest="160">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="models:CustomerSite">
+                                    <Grid Padding="10,10">
+                                        <Label Text="{Binding Name}" />
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=SelectSiteCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Grid.GestureRecognizers>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+
+                    <Label Text="Site address" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding SiteAddress}" IsEnabled="{Binding CanEdit}" />
+
+                    <Label Text="Not on the list? Name it and save it as a new site:" Style="{StaticResource Caption}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0"
+                               Text="{Binding NewSiteName}"
+                               Placeholder="Site name, e.g. Warehouse"
+                               IsEnabled="{Binding CanEdit}" />
+                        <Button Grid.Column="1"
+                                Text="Add"
+                                Command="{Binding AddSiteCommand}"
+                                IsEnabled="{Binding CanEdit}" />
+                    </Grid>
+
+                    <Label Text="Technician" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Technician}" IsEnabled="{Binding CanEdit}" />
+
+                    <Label Text="Status" Style="{StaticResource Caption}" />
+                    <Label Text="{Binding Status}" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}"
+                    IsVisible="{Binding HasJobCard}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Job card actions" FontAttributes="Bold" />
+                    <Button Text="Mark complete"
+                            Command="{Binding CompleteCommand}"
+                            IsVisible="{Binding CanComplete}" />
+                    <Button Text="Create invoice"
+                            Command="{Binding InvoiceCommand}"
+                            IsVisible="{Binding CanInvoice}" />
+                    <Button Text="Create quote"
+                            Command="{Binding CreateQuoteCommand}"
+                            IsVisible="{Binding CanCreateQuote}"
+                            BackgroundColor="{StaticResource BrandDark}" />
+                    <Button Text="Cancel job card"
+                            Command="{Binding CancelJobCardCommand}"
+                            IsVisible="{Binding CanCancel}"
+                            BackgroundColor="#B00020" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Line items" FontAttributes="Bold" />
+
+                    <!-- Toggling this adds/removes the call-out line, so it's
+                         gated with the rest of the line editing. -->
+                    <HorizontalStackLayout Spacing="8" IsEnabled="{Binding CanEdit}">
+                        <CheckBox IsChecked="{Binding IncludeCallOutFee}" />
+                        <Label Text="Call-out fee" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <CollectionView ItemsSource="{Binding Lines}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:JobCardLine">
+                                <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,6">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Description}" />
+                                        <Label Style="{StaticResource Caption}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Kind}" />
+                                                    <Span Text=" · " />
+                                                    <Span Text="{Binding Quantity}" />
+                                                    <Span Text=" × " />
+                                                    <Span Text="{Binding UnitPrice, StringFormat='{0:C}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <Label Text="{Binding CustomerItem.Name, StringFormat='Item: {0}'}"
+                                               Style="{StaticResource Caption}"
+                                               TextColor="{StaticResource Brand}"
+                                               IsVisible="{Binding CustomerItem, Converter={x:Static conv:NotNullConverter.Instance}}" />
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="1"
+                                           Text="{Binding LineTotal, StringFormat='{0:C}'}"
+                                           VerticalOptions="Center" />
+
+                                    <Button Grid.Column="2"
+                                            Text="✕"
+                                            WidthRequest="40"
+                                            HeightRequest="34"
+                                            BackgroundColor="Transparent"
+                                            TextColor="{StaticResource Muted}"
+                                            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=CanEdit}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=RemoveLineCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Add-line controls, locked as a block once invoiced.
+                         Order is deliberate: pick the equipment being worked
+                         on first, then describe what was done to it. -->
+                    <VerticalStackLayout Spacing="8" IsEnabled="{Binding CanEdit}">
+                        <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                        <Picker ItemsSource="{Binding LineKinds}" SelectedItem="{Binding NewLineKind}" />
+
+                        <Label Text="Item (optional)" Style="{StaticResource Caption}" />
+                        <Picker ItemsSource="{Binding CustomerItems}"
+                                ItemDisplayBinding="{Binding DisplayName}"
+                                SelectedItem="{Binding SelectedCustomerItem}" />
+
+                        <Label Text="Not on the list? Pick or type a category, name the item and add it:" Style="{StaticResource Caption}" />
+                        <Picker ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
+                        <Entry Text="{Binding NewCategoryName}" Placeholder="or type a new category, e.g. Motor" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Text="{Binding NewItemName}" Placeholder="New item name, e.g. Front gate motor" />
+                            <Button Grid.Column="1" Text="Add" Command="{Binding AddNewCustomerItemCommand}" />
+                        </Grid>
+
+                        <Entry Text="{Binding NewLineDescription}" Placeholder="Description" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Text="{Binding NewLineQuantity}" Keyboard="Numeric" Placeholder="Qty" />
+                            <Entry Grid.Column="1" Text="{Binding NewLineUnitPrice}" Keyboard="Numeric" Placeholder="Unit price" />
+                        </Grid>
+
+                        <Button Text="Check previous pricing for this customer"
+                                FontSize="13"
+                                HeightRequest="38"
+                                BackgroundColor="Transparent"
+                                TextColor="{StaticResource Brand}"
+                                Command="{Binding CheckPricingHistoryCommand}" />
+
+                        <VerticalStackLayout IsVisible="{Binding IsPricingHistoryVisible}" Spacing="6">
+                            <ActivityIndicator IsRunning="{Binding IsPricingHistoryBusy}"
+                                                IsVisible="{Binding IsPricingHistoryBusy}" />
+                            <CollectionView ItemsSource="{Binding PricingHistory}" HeightRequest="160">
+                                <CollectionView.EmptyView>
+                                    <Label Text="No previous pricing found for this customer."
+                                           Style="{StaticResource Caption}" />
+                                </CollectionView.EmptyView>
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PricingHistoryEntry">
+                                        <Grid ColumnDefinitions="*,Auto" Padding="0,4">
+                                            <VerticalStackLayout Grid.Column="0">
+                                                <Label Text="{Binding Description}" FontSize="13" />
+                                                <Label Style="{StaticResource Caption}">
+                                                    <Label.FormattedText>
+                                                        <FormattedString>
+                                                            <Span Text="{Binding InvoiceNumber}" />
+                                                            <Span Text=" · " />
+                                                            <Span Text="{Binding InvoiceDate, StringFormat='{0:d}'}" />
+                                                            <Span Text=" · qty " />
+                                                            <Span Text="{Binding Quantity}" />
+                                                        </FormattedString>
+                                                    </Label.FormattedText>
+                                                </Label>
+                                            </VerticalStackLayout>
+                                            <Button Grid.Column="1"
+                                                    Text="{Binding UnitPrice, StringFormat='Use {0:C}'}"
+                                                    FontSize="12"
+                                                    HeightRequest="34"
+                                                    Padding="8,0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:JobCardEditViewModel}}, Path=UsePricingHistoryEntryCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+
+                        <Button Text="Add line" Command="{Binding AddLineCommand}" />
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding Subtotal, StringFormat='Subtotal: {0:C}'}"
+                           FontAttributes="Bold"
+                           HorizontalOptions="End" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Save job card" Command="{Binding SaveCommand}" IsVisible="{Binding CanEdit}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

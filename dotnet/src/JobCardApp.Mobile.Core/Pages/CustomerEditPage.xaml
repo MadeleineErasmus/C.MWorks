@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:JobCardApp.Shared.Models;assembly=JobCardApp.Shared"
+             xmlns:vm="clr-namespace:JobCardApp.Mobile.ViewModels"
+             x:Class="JobCardApp.Mobile.Pages.CustomerEditPage"
+             x:DataType="vm:CustomerEditViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Title="Customer">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save" Command="{Binding SaveCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="14" Spacing="12">
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Company name" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Name}" Placeholder="e.g. Acme Manufacturing" />
+
+                    <Label Text="Contact person" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding ContactPerson}" />
+
+                    <Label Text="Email" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Email}" Keyboard="Email" />
+
+                    <Label Text="Phone" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding Phone}" Keyboard="Telephone" />
+
+                    <Label Text="Address" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding Address}" HeightRequest="80" />
+
+                    <Label Text="VAT number" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding VatNumber}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Equipment" FontAttributes="Bold" />
+                    <Label Text="Save the customer first, then add equipment here."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanDelete, Converter={x:Static vm:InverseBoolConverter.Instance}}" />
+
+                    <CollectionView ItemsSource="{Binding GroupedItems}" IsGrouped="True" HeightRequest="200">
+                        <CollectionView.EmptyView>
+                            <Label Text="No equipment recorded for this customer yet."
+                                   Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.GroupHeaderTemplate>
+                            <DataTemplate x:DataType="vm:CustomerItemGroup">
+                                <Label Text="{Binding Category}" FontAttributes="Bold" Padding="0,6,0,2" />
+                            </DataTemplate>
+                        </CollectionView.GroupHeaderTemplate>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomerItem">
+                                <VerticalStackLayout Padding="0,6" Spacing="4">
+                                    <Label Text="{Binding Name}" />
+                                    <FlexLayout Wrap="Wrap" JustifyContent="Start">
+                                        <Button Text="History"
+                                                FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=ViewItemHistoryCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Text="Category"
+                                                FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                                BackgroundColor="{StaticResource BrandDark}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=ChangeItemCategoryCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Text="Remove"
+                                                FontSize="12" HeightRequest="34" Padding="10,0" Margin="0,0,6,6"
+                                                BackgroundColor="Transparent" TextColor="{StaticResource Muted}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=RemoveItemCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </FlexLayout>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <Label Text="Category" Style="{StaticResource Caption}" />
+                    <Picker ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
+                    <Entry Text="{Binding NewCategoryName}" Placeholder="or type a new category, e.g. Motor" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0" Text="{Binding NewItemName}" Placeholder="New item name, e.g. Front gate motor" />
+                        <Button Grid.Column="1" Text="Add" Command="{Binding AddItemCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Invoice emails" FontAttributes="Bold" />
+                    <Label Text="The Email field above always receives quotes and invoices. Add any extra addresses (e.g. accounts department, a manager) that should also get a copy."
+                           Style="{StaticResource Caption}" />
+                    <Label Text="Save the customer first, then add additional emails here."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanDelete, Converter={x:Static vm:InverseBoolConverter.Instance}}" />
+
+                    <CollectionView ItemsSource="{Binding InvoiceEmails}" HeightRequest="160">
+                        <CollectionView.EmptyView>
+                            <Label Text="No additional invoice emails for this customer yet."
+                                   Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomerEmail">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                    <Label Grid.Column="0" Text="{Binding Email}" VerticalOptions="Center" />
+                                    <Button Grid.Column="1"
+                                            Text="Remove"
+                                            FontSize="12"
+                                            HeightRequest="34"
+                                            Padding="8,0"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=RemoveInvoiceEmailCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0" Text="{Binding NewInvoiceEmail}" Keyboard="Email" Placeholder="accounts@example.com" />
+                        <Button Grid.Column="1" Text="Add" Command="{Binding AddInvoiceEmailCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Sites" FontAttributes="Bold" />
+                    <Label Text="Save addresses for this customer's premises (e.g. Head office, Warehouse) so they can be picked quickly on a job card."
+                           Style="{StaticResource Caption}" />
+                    <Label Text="Save the customer first, then add sites here."
+                           Style="{StaticResource Caption}"
+                           IsVisible="{Binding CanDelete, Converter={x:Static vm:InverseBoolConverter.Instance}}" />
+
+                    <CollectionView ItemsSource="{Binding Sites}" HeightRequest="160">
+                        <CollectionView.EmptyView>
+                            <Label Text="No sites recorded for this customer yet."
+                                   Style="{StaticResource Caption}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CustomerSite">
+                                <Grid ColumnDefinitions="*,Auto" Padding="0,6">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Name}" />
+                                        <Label Text="{Binding Address}" Style="{StaticResource Caption}" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="1"
+                                            Text="Remove"
+                                            FontSize="12"
+                                            HeightRequest="34"
+                                            Padding="8,0"
+                                            VerticalOptions="Start"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CustomerEditViewModel}}, Path=RemoveSiteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Border}" />
+
+                    <Label Text="Site name" Style="{StaticResource Caption}" />
+                    <Entry Text="{Binding NewSiteName}" Placeholder="e.g. Head office" />
+
+                    <Label Text="Site address" Style="{StaticResource Caption}" />
+                    <Editor Text="{Binding NewSiteAddress}" HeightRequest="80" />
+
+                    <Button Text="Add" Command="{Binding AddSiteCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Save customer" Command="{Binding SaveCommand}" />
+
+            <Button Text="View statement"
+                    Command="{Binding ViewStatementCommand}"
+                    IsVisible="{Binding CanViewStatement}"
+                    BackgroundColor="{StaticResource BrandDark}" />
+
+            <Button Text="Delete customer"
+                    Command="{Binding DeleteCommand}"
+                    IsVisible="{Binding CanDelete}"
+                    BackgroundColor="#B00020" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -41,17 +41,27 @@ public class CustomersController : ControllerBase
     /// What this customer has been charged before, newest first — for
     /// deciding a price on a new line, not for automatically setting one
     /// (§7: the user must explicitly choose to reuse a previous price).
+    /// Scoped two ways so the answer is actually comparable: only the last
+    /// six months (older pricing is too stale to reuse), and — when a
+    /// <paramref name="kind"/> is given — only lines of that same kind, matched
+    /// on the "[Kind] " prefix <see cref="JobCardApp.Shared.InvoiceFactory"/>
+    /// writes into every invoice line description. Without that, a free-text
+    /// search could surface a coincidentally-similar description that was
+    /// really a different kind of work altogether.
     /// </summary>
     [HttpGet("{id:int}/pricing-history")]
-    public async Task<ActionResult<List<PricingHistoryEntry>>> GetPricingHistory(int id, [FromQuery] string? search)
+    public async Task<ActionResult<List<PricingHistoryEntry>>> GetPricingHistory(
+        int id, [FromQuery] string? search, [FromQuery] LineKind? kind)
     {
         if (!await _db.Customers.AnyAsync(c => c.Id == id))
             return NotFound();
 
+        var cutoff = DateTime.UtcNow.AddMonths(-6);
+
         var query =
             from line in _db.InvoiceLines
             join invoice in _db.Invoices on line.InvoiceId equals invoice.Id
-            where invoice.CustomerId == id
+            where invoice.CustomerId == id && invoice.IssuedOn >= cutoff
             select new { line, invoice };
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -60,7 +70,11 @@ public class CustomersController : ControllerBase
             query = query.Where(x => EF.Functions.Like(x.line.Description, $"%{term}%"));
         }
 
-        return await query
+        var kindPrefix = kind.HasValue ? $"[{kind.Value}]" : null;
+        if (kindPrefix is not null)
+            query = query.Where(x => x.line.Description.StartsWith(kindPrefix));
+
+        var entries = await query
             .OrderByDescending(x => x.invoice.IssuedOn)
             .Take(25)
             .Select(x => new PricingHistoryEntry
@@ -72,6 +86,17 @@ public class CustomersController : ControllerBase
                 InvoiceDate = x.invoice.IssuedOn
             })
             .ToListAsync();
+
+        // The caller already knows the kind it asked for — repeating it on
+        // every row is just noise. Stripped in memory: the conditional trim
+        // isn't worth pushing into SQL for at most 25 rows.
+        if (kindPrefix is not null)
+        {
+            foreach (var entry in entries)
+                entry.Description = entry.Description[kindPrefix.Length..].TrimStart();
+        }
+
+        return entries;
     }
 
     /// <summary>

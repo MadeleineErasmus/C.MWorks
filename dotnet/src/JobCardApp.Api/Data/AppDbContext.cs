@@ -169,6 +169,10 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.Name).IsRequired().HasMaxLength(200);
             e.Property(x => x.TaxRate).HasPrecision(9, 4);
+            // Money amounts, so they follow the 18,2 convention used by every
+            // other currency column — TaxRate's 9,4 is for a rate fraction.
+            e.Property(x => x.DefaultCallOutFee).HasPrecision(18, 2);
+            e.Property(x => x.DefaultLabourRate).HasPrecision(18, 2);
         });
 
         b.Entity<Quote>(e =>

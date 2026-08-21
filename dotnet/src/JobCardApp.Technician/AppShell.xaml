@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:JobCardApp.Mobile.Pages"
+       xmlns:shared="clr-namespace:JobCardApp.Mobile.Pages;assembly=JobCardApp.Mobile.Core"
+       x:Class="JobCardApp.Technician.AppShell"
+       Shell.FlyoutBehavior="Disabled"
+       Shell.BackgroundColor="{StaticResource Brand}"
+       Shell.TitleColor="White"
+       Shell.TabBarTitleColor="White"
+       Shell.TabBarUnselectedColor="{StaticResource BrandDark}">
+
+    <ShellContent Title="Login"
+                  Route="login"
+                  ContentTemplate="{DataTemplate shared:LoginPage}" />
+
+    <TabBar>
+        <ShellContent Title="Job cards"
+                      Route="jobcards"
+                      ContentTemplate="{DataTemplate pages:JobCardListPage}" />
+        <ShellContent Title="Customers"
+                      Route="customers"
+                      ContentTemplate="{DataTemplate shared:CustomerListPage}" />
+    </TabBar>
+</Shell>

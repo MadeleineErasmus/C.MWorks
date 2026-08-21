@@ -1,7 +1,10 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/JobCardApp.Admin/JobCardApp.Admin.csproj" />
     <Project Path="src/JobCardApp.Api/JobCardApp.Api.csproj" />
     <Project Path="src/JobCardApp.Mobile/JobCardApp.Mobile.csproj" />
+    <Project Path="src/JobCardApp.Mobile.Core/JobCardApp.Mobile.Core.csproj" />
     <Project Path="src/JobCardApp.Shared/JobCardApp.Shared.csproj" />
+    <Project Path="src/JobCardApp.Technician/JobCardApp.Technician.csproj" />
   </Folder>
 </Solution>
